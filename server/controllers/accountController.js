@@ -2,14 +2,44 @@ const db = require('../database');
 const { formatNumber } = require('../utils/formatNumber');
 
 /**
+ * Verifica se o usuário autenticado é a conta administrativa Viole.
+ * A conta Viole continua visível no ranking e no PvP.
+ */
+function isViole(req) {
+  const user = db
+    .prepare('SELECT username, is_admin FROM users WHERE id = ?')
+    .get(req.user.id);
+
+  return !!(user && user.username === 'Viole' && user.is_admin === 1);
+}
+
+/**
+ * Verifica se um personagem pertence ao usuário autenticado.
+ * Isso impede que alguém tente manipular personagens de outra conta.
+ */
+function getOwnedCharacter(charId, userId) {
+  return db
+    .prepare(
+      `SELECT uc.id, uc.user_id, uc.is_favorite, uc.is_locked,
+              c.is_admin_exclusive, c.name, c.rarity
+       FROM user_characters uc
+       JOIN characters c ON uc.character_id = c.id
+       WHERE uc.id = ? AND uc.user_id = ?`
+    )
+    .get(charId, userId);
+}
+
+/**
  * Dados completos da conta do jogador
  * GET /api/account
  */
 function getAccount(req, res) {
   const user = db
     .prepare(
-      `SELECT id, username, email, gems, gold, level, xp, avatar_url, is_admin, last_login, created_at
-       FROM users WHERE id = ?`
+      `SELECT id, username, email, gems, gold, level, xp,
+              avatar_url, last_login, created_at
+       FROM users
+       WHERE id = ?`
     )
     .get(req.user.id);
 
@@ -17,29 +47,34 @@ function getAccount(req, res) {
     return res.status(404).json({ error: 'Usuário não encontrado' });
   }
 
-  // Conta personagens da bag
   const charCount = db
     .prepare('SELECT COUNT(*) as count FROM user_characters WHERE user_id = ?')
     .get(req.user.id);
 
-  // Conta itens do inventário
   const itemCount = db
     .prepare('SELECT COUNT(*) as count FROM inventory WHERE user_id = ?')
     .get(req.user.id);
 
-  // Dados do login diário
   const daily = db
-    .prepare('SELECT total_days, streak FROM user_daily_logins WHERE user_id = ?')
+    .prepare(
+      'SELECT total_days, streak FROM user_daily_logins WHERE user_id = ?'
+    )
     .get(req.user.id) || { total_days: 0, streak: 0 };
 
   return res.json({
     user: {
       ...user,
+
+      // Informação útil apenas internamente no backend.
+      // Não expomos is_admin para usuários comuns.
       gems_formatted: formatNumber(user.gems),
       gold_formatted: formatNumber(user.gold),
+
       bag_count: charCount.count,
       bag_limit: 20,
+
       inventory_count: itemCount.count,
+
       daily_streak: daily.streak,
       daily_total_days: daily.total_days,
     },
@@ -53,21 +88,52 @@ function getAccount(req, res) {
 function getCharacters(req, res) {
   const characters = db
     .prepare(
-      `SELECT uc.id, uc.level, uc.xp, uc.hp, uc.max_hp, uc.atk, uc.def, uc.speed,
-              uc.is_favorite, uc.is_locked, uc.obtained_at,
-              c.name, c.anime, c.rarity, c.element, c.role, c.skill_name, c.skill_description,
-              c.image_url, c.image_idle_url, c.gif_attack_url, c.gif_defend_url,
-              c.gif_skill_url, c.gif_hit_url, c.gif_victory_url, c.gif_defeat_url, c.power_tier
+      `SELECT
+          uc.id,
+          uc.level,
+          uc.xp,
+          uc.hp,
+          uc.max_hp,
+          uc.atk,
+          uc.def,
+          uc.speed,
+          uc.is_favorite,
+          uc.is_locked,
+          uc.obtained_at,
+
+          c.name,
+          c.anime,
+          c.rarity,
+          c.element,
+          c.role,
+          c.skill_name,
+          c.skill_description,
+
+          c.image_url,
+          c.image_idle_url,
+          c.gif_attack_url,
+          c.gif_defend_url,
+          c.gif_skill_url,
+          c.gif_hit_url,
+          c.gif_victory_url,
+          c.gif_defeat_url,
+
+          c.power_tier
        FROM user_characters uc
        JOIN characters c ON uc.character_id = c.id
+
        WHERE uc.user_id = ?
-       ORDER BY uc.is_favorite DESC, uc.is_locked DESC, c.power_tier DESC`
+
+       ORDER BY
+         uc.is_favorite DESC,
+         uc.is_locked DESC,
+         c.power_tier DESC`
     )
     .all(req.user.id);
 
-  // Formata os atributos
   const formatted = characters.map((char) => ({
     ...char,
+
     hp_formatted: formatNumber(char.hp),
     max_hp_formatted: formatNumber(char.max_hp),
     atk_formatted: formatNumber(char.atk),
@@ -89,20 +155,54 @@ function getCharacters(req, res) {
 function getTeam(req, res) {
   const team = db
     .prepare(
-      `SELECT ut.slot, uc.id as user_character_id, uc.level, uc.xp, uc.hp, uc.max_hp, uc.atk, uc.def, uc.speed,
-              c.name, c.anime, c.rarity, c.element, c.role, c.skill_name, c.skill_description,
-              c.image_url, c.image_idle_url, c.gif_attack_url, c.gif_defend_url,
-              c.gif_skill_url, c.gif_hit_url, c.gif_victory_url, c.gif_defeat_url, c.power_tier
+      `SELECT
+          ut.slot,
+
+          uc.id AS user_character_id,
+          uc.level,
+          uc.xp,
+          uc.hp,
+          uc.max_hp,
+          uc.atk,
+          uc.def,
+          uc.speed,
+
+          c.name,
+          c.anime,
+          c.rarity,
+          c.element,
+          c.role,
+          c.skill_name,
+          c.skill_description,
+
+          c.image_url,
+          c.image_idle_url,
+          c.gif_attack_url,
+          c.gif_defend_url,
+          c.gif_skill_url,
+          c.gif_hit_url,
+          c.gif_victory_url,
+          c.gif_defeat_url,
+
+          c.power_tier
+
        FROM user_teams ut
-       JOIN user_characters uc ON ut.user_character_id = uc.id
-       JOIN characters c ON uc.character_id = c.id
+
+       JOIN user_characters uc
+         ON ut.user_character_id = uc.id
+
+       JOIN characters c
+         ON uc.character_id = c.id
+
        WHERE ut.user_id = ?
+
        ORDER BY ut.slot`
     )
     .all(req.user.id);
 
   const formatted = team.map((char) => ({
     ...char,
+
     hp_formatted: formatNumber(char.hp),
     max_hp_formatted: formatNumber(char.max_hp),
     atk_formatted: formatNumber(char.atk),
@@ -120,33 +220,49 @@ function getTeam(req, res) {
 /**
  * Montar o time ativo (máx. 3 personagens)
  * PUT /api/account/team
- * Body: { "slots": [userCharacterId1, userCharacterId2, userCharacterId3] }
+ * Body: { "slots": [id1, id2, id3] }
  */
 function setTeam(req, res) {
   const { slots } = req.body;
 
-  if (!slots || !Array.isArray(slots) || slots.length === 0 || slots.length > 3) {
-    return res.status(400).json({ error: 'Envie entre 1 e 3 personagens no time' });
+  if (
+    !slots ||
+    !Array.isArray(slots) ||
+    slots.length === 0 ||
+    slots.length > 3
+  ) {
+    return res.status(400).json({
+      error: 'Envie entre 1 e 3 personagens no time',
+    });
   }
 
-  // Verifica se todos os personagens pertencem ao jogador
+  // Evita personagens duplicados no mesmo time.
+  if (new Set(slots).size !== slots.length) {
+    return res.status(400).json({
+      error: 'Não é possível colocar o mesmo personagem mais de uma vez',
+    });
+  }
+
   const checkOwnership = db.prepare(
     'SELECT id FROM user_characters WHERE id = ? AND user_id = ?'
   );
 
   for (const charId of slots) {
     const owned = checkOwnership.get(charId, req.user.id);
+
     if (!owned) {
-      return res.status(400).json({ error: `Personagem ${charId} não pertence ao jogador` });
+      return res.status(400).json({
+        error: `Personagem ${charId} não pertence ao jogador`,
+      });
     }
   }
 
-  // Remove o time atual
   db.prepare('DELETE FROM user_teams WHERE user_id = ?').run(req.user.id);
 
-  // Insere o novo time
   const insertTeam = db.prepare(
-    'INSERT INTO user_teams (user_id, user_character_id, slot) VALUES (?, ?, ?)'
+    `INSERT INTO user_teams
+      (user_id, user_character_id, slot)
+     VALUES (?, ?, ?)`
   );
 
   const insertAll = db.transaction(() => {
@@ -154,6 +270,7 @@ function setTeam(req, res) {
       insertTeam.run(req.user.id, charId, index + 1);
     });
   });
+
   insertAll();
 
   return res.json({
@@ -165,16 +282,19 @@ function setTeam(req, res) {
 /**
  * Atualizar avatar do jogador
  * PUT /api/account/avatar
- * Body: { "avatar_url": "https://..." }
  */
 function updateAvatar(req, res) {
   const { avatar_url } = req.body;
 
-  if (!avatar_url) {
-    return res.status(400).json({ error: 'avatar_url é obrigatório' });
+  if (!avatar_url || typeof avatar_url !== 'string') {
+    return res.status(400).json({
+      error: 'avatar_url é obrigatório',
+    });
   }
 
-  db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(avatar_url, req.user.id);
+  db.prepare(
+    'UPDATE users SET avatar_url = ? WHERE id = ?'
+  ).run(avatar_url, req.user.id);
 
   return res.json({
     message: 'Avatar atualizado com sucesso!',
@@ -189,19 +309,26 @@ function updateAvatar(req, res) {
 function toggleFavorite(req, res) {
   const charId = req.params.id;
 
-  const char = db
-    .prepare('SELECT id, is_favorite FROM user_characters WHERE id = ? AND user_id = ?')
-    .get(charId, req.user.id);
+  const char = getOwnedCharacter(charId, req.user.id);
 
   if (!char) {
-    return res.status(404).json({ error: 'Personagem não encontrado' });
+    return res.status(404).json({
+      error: 'Personagem não encontrado',
+    });
   }
 
   const newValue = char.is_favorite === 1 ? 0 : 1;
-  db.prepare('UPDATE user_characters SET is_favorite = ? WHERE id = ?').run(newValue, charId);
+
+  db.prepare(
+    'UPDATE user_characters SET is_favorite = ? WHERE id = ? AND user_id = ?'
+  ).run(newValue, charId, req.user.id);
 
   return res.json({
-    message: newValue === 1 ? 'Personagem favoritado!' : 'Personagem desfavoritado',
+    message:
+      newValue === 1
+        ? 'Personagem favoritado!'
+        : 'Personagem desfavoritado',
+
     is_favorite: newValue,
   });
 }
@@ -213,62 +340,75 @@ function toggleFavorite(req, res) {
 function toggleLock(req, res) {
   const charId = req.params.id;
 
-  const char = db
-    .prepare('SELECT id, is_locked FROM user_characters WHERE id = ? AND user_id = ?')
-    .get(charId, req.user.id);
+  const char = getOwnedCharacter(charId, req.user.id);
 
   if (!char) {
-    return res.status(404).json({ error: 'Personagem não encontrado' });
+    return res.status(404).json({
+      error: 'Personagem não encontrado',
+    });
   }
 
   const newValue = char.is_locked === 1 ? 0 : 1;
-  db.prepare('UPDATE user_characters SET is_locked = ? WHERE id = ?').run(newValue, charId);
+
+  db.prepare(
+    'UPDATE user_characters SET is_locked = ? WHERE id = ? AND user_id = ?'
+  ).run(newValue, charId, req.user.id);
 
   return res.json({
-    message: newValue === 1 ? 'Personagem bloqueado!' : 'Personagem desbloqueado',
+    message:
+      newValue === 1
+        ? 'Personagem bloqueado!'
+        : 'Personagem desbloqueado',
+
     is_locked: newValue,
   });
 }
 
 /**
- * Deletar personagem (com proteção para favoritos/locked/admin exclusivos)
+ * Deletar personagem
  * DELETE /api/account/characters/:id
  */
 function deleteCharacter(req, res) {
   const charId = req.params.id;
 
-  const char = db
-    .prepare(
-      `SELECT uc.id, uc.is_favorite, uc.is_locked, c.is_admin_exclusive, c.name, c.rarity
-       FROM user_characters uc
-       JOIN characters c ON uc.character_id = c.id
-       WHERE uc.id = ? AND uc.user_id = ?`
-    )
-    .get(charId, req.user.id);
+  const char = getOwnedCharacter(charId, req.user.id);
 
   if (!char) {
-    return res.status(404).json({ error: 'Personagem não encontrado' });
+    return res.status(404).json({
+      error: 'Personagem não encontrado',
+    });
   }
 
-  // Proteção: não pode deletar personagens exclusivos do admin
+  // Personagens exclusivos do admin não podem ser deletados.
   if (char.is_admin_exclusive === 1) {
-    return res.status(400).json({ error: 'Não é possível deletar personagens exclusivos do admin' });
+    return res.status(400).json({
+      error: 'Não é possível deletar personagens exclusivos do admin',
+    });
   }
 
-  // Proteção: não pode deletar favoritos ou bloqueados
+  // Favoritos precisam ser desfavoritados antes.
   if (char.is_favorite === 1) {
-    return res.status(400).json({ error: 'Desfavorite o personagem antes de deletar' });
+    return res.status(400).json({
+      error: 'Desfavorite o personagem antes de deletar',
+    });
   }
 
+  // Personagens bloqueados precisam ser desbloqueados antes.
   if (char.is_locked === 1) {
-    return res.status(400).json({ error: 'Desbloqueie o personagem antes de deletar' });
+    return res.status(400).json({
+      error: 'Desbloqueie o personagem antes de deletar',
+    });
   }
 
-  // Remove do time se estiver nele
-  db.prepare('DELETE FROM user_teams WHERE user_character_id = ?').run(charId);
+  // Remove do time.
+  db.prepare(
+    'DELETE FROM user_teams WHERE user_character_id = ? AND user_id = ?'
+  ).run(charId, req.user.id);
 
-  // Deleta o personagem
-  db.prepare('DELETE FROM user_characters WHERE id = ?').run(charId);
+  // Remove somente se realmente pertencer ao usuário.
+  db.prepare(
+    'DELETE FROM user_characters WHERE id = ? AND user_id = ?'
+  ).run(charId, req.user.id);
 
   return res.json({
     message: `${char.name} deletado com sucesso!`,
@@ -286,4 +426,7 @@ module.exports = {
   toggleFavorite,
   toggleLock,
   deleteCharacter,
+
+  // Pode ser usado por outros controllers/middlewares.
+  isViole,
 };
