@@ -91,6 +91,26 @@ async function main() {
       console.log('  Primeiro item:', it.name, '| image_url:', it.image_url ? 'OK' : 'FALTA');
     }
   }
+  console.log('\n=== TESTE ESPECIAL: VIOLE ===');
+
+const account = await request('/api/account', 'GET', null, token);
+
+console.log('Usuário:', account.data.user.username);
+console.log('Admin:', account.data.user.is_admin ? 'SIM' : 'NÃO');
+
+const ranking = await request('/api/pvp/ranking', 'GET', null, token);
+
+if (ranking.data.ranking && ranking.data.ranking.length > 0) {
+    const top1 = ranking.data.ranking[0];
+
+    console.log('Top 1:', top1.username);
+
+    if (top1.username === 'Viole') {
+        console.log('✅ Viole está em primeiro lugar!');
+    } else {
+        console.log('❌ ERRO: Viole não está em primeiro lugar!');
+    }
+}
 
   console.log('\n=== TESTE 10: PULL GACHA (1x) ===');
   if (banners.data.banners && banners.data.banners.length > 0) {
