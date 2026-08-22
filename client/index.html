@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 Gacha Game</title>
+<style>
+  /* ===== CARTUN BRUTALIST ===== */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #1a1a2e;
+    --bg2: #16213e;
+    --bg3: #0f3460;
+    --ink: #111;
+    --paper: #ffe9d6;
+    --accent: #ff5e5b;
+    --accent2: #ffc93c;
+    --green: #3ddc84;
+    --blue: #4f9dde;
+    --purple: #b388ff;
+    --shadow: 5px 5px 0 var(--ink);
+    --shadow-sm: 3px 3px 0 var(--ink);
+  }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow: hidden;
+  }
+  button { font-family: inherit; cursor: pointer; border: 3px solid var(--ink); border-radius: 10px; box-shadow: var(--shadow-sm); font-weight: 800; transition: transform .1s, box-shadow .1s; }
+  button:hover { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--ink); }
+  button:active { transform: translate(1px, 1px); box-shadow: 1px 1px 0 var(--ink); }
+  button:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: var(--shadow-sm); }
+
+  /* ===== LOGIN ===== */
+  #loginScreen {
+    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 30% 20%, var(--bg3), var(--bg) 60%);
+    z-index: 100;
+  }
+  .login-box {
+    background: var(--paper); border: 4px solid var(--ink); border-radius: 20px; box-shadow: 8px 8px 0 var(--ink);
+    padding: 32px; width: 400px; max-width: 92vw;
+  }
+  .login-box h1 { font-size: 2.2em; text-align: center; letter-spacing: 1px; text-shadow: 3px 3px 0 rgba(0,0,0,.15); }
+  .login-box .tagline { text-align: center; color: #555; margin-bottom: 20px; font-weight: 600; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tabs button { flex: 1; padding: 10px; background: #fff; }
+  .tabs button.active { background: var(--accent2); }
+  .form-group { margin-bottom: 12px; }
+  .form-group label { font-size: .8em; font-weight: 800; display: block; margin-bottom: 4px; }
+  .form-group input {
+    width: 100%; padding: 10px 12px; border: 3px solid var(--ink); border-radius: 10px;
+    font-size: 14px; background: #fff; box-shadow: 3px 3px 0 var(--ink);
+  }
+  .btn-primary { width: 100%; padding: 12px; font-size: 1em; background: var(--accent); color: #fff; }
+  .login-error { display: none; background: #ffd1d1; border: 3px solid var(--ink); border-radius: 8px; padding: 8px; margin-top: 10px; font-size: .8em; color: #a00; font-weight: 700; }
+
+  /* ===== APP ===== */
+  #app { display: none; height: 100vh; flex-direction: column; }
+
+  /* Header */
+  .topbar {
+    background: var(--paper); border-bottom: 4px solid var(--ink);
+    padding: 8px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    box-shadow: 0 4px 0 rgba(0,0,0,.2); z-index: 10;
+  }
+  .logo { font-size: 1.2em; font-weight: 900; letter-spacing: 1px; margin-right: auto; }
+  .bag-pill { background: #fff; border: 3px solid var(--ink); border-radius: 20px; padding: 4px 12px; font-weight: 800; font-size: .85em; box-shadow: var(--shadow-sm); }
+  .coin { background: #fff; border: 3px solid var(--ink); border-radius: 20px; padding: 4px 12px; font-weight: 800; font-size: .85em; box-shadow: var(--shadow-sm); }
+  .coin.gems { color: #d6336c; }
+  .coin.gold { color: #c77d0d; }
+  .icon-btn { background: var(--accent2); padding: 6px 10px; font-size: .85em; }
+  .sound-btn { background: var(--green); padding: 6px 10px; font-size: .85em; }
+
+  /* Layout */
+  .layout { flex: 1; display: flex; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 170px; background: var(--bg2); border-right: 4px solid var(--ink);
+    padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto;
+  }
+  .sidebar button { padding: 10px; font-size: .9em; background: var(--bg3); color: #fff; text-align: left; }
+  .sidebar button:hover { background: var(--accent); }
+
+  /* Main */
+  .main { flex: 1; overflow-y: auto; padding: 16px; background: radial-gradient(circle at 50% 0%, var(--bg3), var(--bg)); }
+
+  /* Banner */
+  .banner-card {
+    background: var(--paper); border: 4px solid var(--ink); border-radius: 16px;
+    box-shadow: var(--shadow); padding: 16px; margin-bottom: 16px;
+  }
+  .banner-card h2 { font-size: 1.3em; }
+  .banner-card .desc { color: #555; font-weight: 600; margin-bottom: 10px; }
+  .banner-display { display: flex; justify-content: center; gap: 20px; flex-wrap: wrap; margin: 10px 0; }
+  .banner-char { background: #fff; border: 4px solid var(--ink); border-radius: 14px; padding: 10px; text-align: center; width: 130px; box-shadow: var(--shadow-sm); }
+  .banner-char .avatar { width: 80px; height: 80px; border-radius: 50%; background: #eee; border: 3px solid var(--ink); margin: 0 auto 6px; display: flex; align-items: center; justify-content: center; font-size: 2.4em; overflow: hidden; }
+  .banner-char .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .pull-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+  .pull-btn { padding: 12px 22px; font-size: 1em; }
+  .pull-btn.single { background: var(--green); }
+  .pull-btn.multi { background: var(--accent); color: #fff; }
+  #pullResults { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; margin-top: 14px; }
+  .result-card { background: #fff; border: 4px solid var(--ink); border-radius: 12px; padding: 8px; text-align: center; animation: pop .4s ease; }
+  @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .rarity-secret { border-color: #ff3b3b; }
+  .rarity-mythic { border-color: #ffc93c; }
+  .rarity-legendary { border-color: #b388ff; }
+  .rarity-epic { border-color: #4f9dde; }
+  .rarity-rare { border-color: #74b9ff; }
+  .rarity-common { border-color: #95a5a6; }
+  .avatar { background: #eee; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: .65em; font-weight: 900; text-transform: uppercase; border: 2px solid var(--ink); background: #fff; }
+
+  /* Unidades - grade */
+  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .toolbar input[type=text] { padding: 8px 10px; border: 3px solid var(--ink); border-radius: 10px; background: #fff; box-shadow: var(--shadow-sm); font-size: .9em; flex: 1; min-width: 150px; }
+  .toolbar select { padding: 8px; border: 3px solid var(--ink); border-radius: 10px; background: #fff; box-shadow: var(--shadow-sm); font-weight: 700; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+  .unit-card {
+    background: #fff; border: 4px solid var(--ink); border-radius: 12px; padding: 10px;
+    box-shadow: var(--shadow-sm); cursor: pointer; position: relative; transition: transform .15s, box-shadow .15s;
+  }
+  .unit-card:hover { transform: translate(-2px, -2px) rotate(-1deg); box-shadow: 6px 6px 0 var(--ink); }
+  .unit-card.selected { outline: 4px solid var(--accent2); }
+  .unit-card .avatar { width: 70px; height: 70px; border-radius: 12px; margin: 0 auto 6px; font-size: 2.2em; transition: transform .2s; }
+  .unit-card:hover .avatar { transform: rotate(5deg) scale(1.05); }
+  .unit-card .uname { font-weight: 900; font-size: .85em; text-align: center; line-height: 1.1; }
+  .unit-card .sub { font-size: .65em; color: #666; text-align: center; font-weight: 700; }
+  .unit-card .badges { position: absolute; top: 4px; left: 4px; display: flex; gap: 2px; }
+  .unit-card .badge { background: var(--paper); border: 2px solid var(--ink); border-radius: 6px; font-size: .6em; padding: 1px 4px; font-weight: 900; }
+  .hp-bar { height: 8px; background: #ddd; border: 2px solid var(--ink); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+  .hp-bar .fill { height: 100%; background: var(--green); transition: width .4s ease; }
+  .xp-bar { height: 5px; background: #ddd; border: 1px solid var(--ink); border-radius: 3px; margin-top: 3px; overflow: hidden; }
+  .xp-bar .fill { height: 100%; background: var(--purple); }
+  /* Sombra colorida por elemento */
+  .unit-card[data-element="fogo"] { box-shadow: 0 0 12px rgba(255,140,0,.5), var(--shadow-sm); }
+  .unit-card[data-element="agua"] { box-shadow: 0 0 12px rgba(0,150,255,.5), var(--shadow-sm); }
+  .unit-card[data-element="natureza"] { box-shadow: 0 0 12px rgba(60,200,80,.5), var(--shadow-sm); }
+  .unit-card[data-element="trevas"] { box-shadow: 0 0 12px rgba(120,60,180,.5), var(--shadow-sm); }
+  .unit-card[data-element="luz"] { box-shadow: 0 0 12px rgba(255,220,80,.5), var(--shadow-sm); }
+  .unit-card[data-element="magia"] { box-shadow: 0 0 12px rgba(180,80,255,.5), var(--shadow-sm); }
+  .unit-card[data-element="ouro"] { box-shadow: 0 0 12px rgba(255,200,0,.5), var(--shadow-sm); }
+  .unit-card[data-element="vazio"] { box-shadow: 0 0 12px rgba(100,100,120,.5), var(--shadow-sm); }
+  .unit-card[data-element="pedra"] { box-shadow: 0 0 12px rgba(150,120,80,.5), var(--shadow-sm); }
+  .unit-card[data-element="espírito"] { box-shadow: 0 0 12px rgba(80,200,220,.5), var(--shadow-sm); }
+  /* Badge de raridade animada */
+  .rarity-badge { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: .65em; font-weight: 900; text-transform: uppercase; border: 2px solid var(--ink); background: #fff; }
+  .rarity-badge.secret, .rarity-badge.mythic { animation: glowPulse 1.5s infinite; }
+  @keyframes glowPulse {
+    0%, 100% { box-shadow: 0 0 4px rgba(255,60,60,.6); }
+    50% { box-shadow: 0 0 14px rgba(255,60,60,1); }
+  }
+
+  /* Painel de detalhes */
+  .details-panel {
+    width: 300px; background: var(--paper); border-left: 4px solid var(--ink);
+    padding: 14px; overflow-y: auto;
+  }
+  .details-panel .avatar { width: 100px; height: 100px; border-radius: 20px; margin: 0 auto 10px; font-size: 3em; }
+  .details-panel h3 { font-size: 1.2em; text-align: center; }
+  .stat-row { display: flex; justify-content: space-between; background: #fff; border: 3px solid var(--ink); border-radius: 8px; padding: 6px 10px; margin-top: 6px; font-size: .85em; font-weight: 700; }
+  .details-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .details-actions button { padding: 8px; font-size: .8em; }
+  .action-evolve { background: var(--purple); color: #fff; grid-column: 1 / -1; }
+  .action-fav { background: var(--accent2); }
+  .action-lock { background: var(--blue); color: #fff; }
+  .action-team { background: var(--green); grid-column: 1 / -1; }
+  .action-delete { background: #e74c3c; color: #fff; grid-column: 1 / -1; }
+
+  /* Itens */
+  .item-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .item-tabs button { padding: 8px 14px; font-size: .8em; background: var(--bg3); color: #fff; }
+  .item-tabs button.active { background: var(--accent2); color: var(--ink); }
+  .item-list { display: flex; flex-direction: column; gap: 10px; }
+  .item-card { background: var(--paper); border: 4px solid var(--ink); border-radius: 12px; padding: 10px; box-shadow: var(--shadow-sm); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .item-card .info { flex: 1; }
+  .item-card .iname { font-weight: 900; }
+  .item-card .idesc { font-size: .72em; color: #555; }
+  .item-card .qty { background: #fff; border: 3px solid var(--ink); border-radius: 10px; padding: 2px 10px; font-weight: 900; }
+  .item-card .use-btn { background: var(--green); padding: 6px 12px; font-size: .8em; }
+  .pick-target { margin-top: 8px; }
+
+  /* Modais */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; z-index: 200; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--paper); border: 5px solid var(--ink); border-radius: 20px; box-shadow: 10px 10px 0 var(--ink); padding: 22px; width: 640px; max-width: 94vw; max-height: 86vh; overflow-y: auto; }
+  .modal h2 { font-size: 1.4em; margin-bottom: 12px; }
+  .modal-close { float: right; background: #fff; padding: 4px 10px; font-size: 1em; }
+  .modal-list { display: flex; flex-direction: column; gap: 10px; }
+  .mq-item { background: #fff; border: 3px solid var(--ink); border-radius: 10px; padding: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .mq-item .iname { font-weight: 900; }
+  .claimable { color: var(--green); font-weight: 900; }
+  .claimed { color: #999; }
+  .progress-bar { height: 10px; background: #ddd; border: 2px solid var(--ink); border-radius: 5px; margin-top: 4px; overflow: hidden; }
+  .progress-bar .fill { height: 100%; background: var(--green); }
+
+  /* Toast */
+  .toast {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+    background: var(--paper); border: 4px solid var(--ink); border-radius: 12px;
+    box-shadow: 5px 5px 0 var(--ink); padding: 10px 20px; font-weight: 900; z-index: 300;
+    display: none; max-width: 90vw; text-align: center;
+  }
+  .toast.show { display: block; animation: toastIn .3s ease; }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(-20px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  /* Confirmação dupla */
+  .confirm-box { text-align: center; }
+  .confirm-box p { margin-bottom: 14px; font-weight: 700; }
+  .confirm-box button { margin: 0 6px; padding: 10px 20px; }
+  .btn-danger { background: #e74c3c; color: #fff; }
+  .btn-ok { background: var(--green); }
+
+  /* ===== CENA DE BATALHA ===== */
+  .battle-scene {
+    background: linear-gradient(180deg, #1a1a2e 0%, #2d1b4e 50%, #1a1a2e 100%);
+    border: 4px solid var(--ink); border-radius: 16px;
+    padding: 16px; position: relative; overflow: hidden; min-height: 380px;
+  }
+  .battle-scene::before {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 60px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,.4));
+  }
+  .battle-side { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; z-index: 2; }
+  .battle-side.left { float: left; width: 45%; }
+  .battle-side.right { float: right; width: 45%; }
+  .battle-avatar {
+    width: 120px; height: 120px; border-radius: 20px; border: 4px solid var(--ink);
+    background: #fff; overflow: hidden; display: flex; align-items: center; justify-content: center;
+    box-shadow: 5px 5px 0 rgba(0,0,0,.5); position: relative;
+  }
+  .battle-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .battle-avatar.small { width: 70px; height: 70px; border-radius: 12px; }
+  .battle-name { color: #fff; font-weight: 900; font-size: .85em; text-shadow: 2px 2px 0 #000; text-align: center; }
+  .battle-hp-wrap { width: 100%; max-width: 180px; }
+  .battle-hp-label { color: #fff; font-size: .65em; font-weight: 800; text-shadow: 1px 1px 0 #000; margin-bottom: 2px; }
+  .battle-hp-bar { height: 14px; background: #333; border: 3px solid var(--ink); border-radius: 8px; overflow: hidden; position: relative; }
+  .battle-hp-fill { height: 100%; background: var(--green); transition: width .5s ease; }
+  .battle-hp-fill.low { background: #e74c3c; }
+  .battle-hp-fill.mid { background: var(--accent2); }
+  .battle-hp-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: .6em; font-weight: 900; color: #fff; text-shadow: 1px 1px 0 #000; }
+  .battle-team { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .battle-unit { text-align: center; }
+  .battle-unit .battle-avatar.small { margin: 0 auto; }
+  .battle-unit .battle-name { font-size: .7em; }
+  .battle-unit .battle-hp-wrap { max-width: 70px; }
+  .battle-unit .battle-hp-bar { height: 8px; }
+  .battle-unit .battle-hp-text { font-size: .5em; }
+  /* Shake */
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-6px); }
+    20%, 40%, 60%, 80% { transform: translateX(6px); }
+  }
+  .shake { animation: shake .5s ease; }
+  /* Dano flutuante */
+  .dmg-num {
+    position: absolute; font-weight: 900; font-size: 1.4em; color: #ff3b3b;
+    text-shadow: 2px 2px 0 #000; pointer-events: none; z-index: 10;
+    animation: floatUp 1s ease forwards;
+  }
+  .dmg-num.heal { color: var(--green); }
+  @keyframes floatUp {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
+  }
+  /* Log de batalha */
+  .battle-log {
+    margin-top: 12px; background: rgba(0,0,0,.7); border: 3px solid var(--ink);
+    border-radius: 10px; padding: 8px; max-height: 120px; overflow-y: auto;
+    font-size: .75em; font-weight: 600; color: #ddd;
+  }
+  .battle-log div { padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,.1); }
+  .battle-log div:last-child { border-bottom: none; }
+  .battle-log .log-player { color: var(--green); }
+  .battle-log .log-boss { color: var(--accent); }
+  .battle-log .log-death { color: #ff3b3b; font-weight: 900; }
+  /* Confete */
+  .confetti { position: fixed; top: -10px; width: 10px; height: 10px; z-index: 400; pointer-events: none; animation: confettiFall linear forwards; }
+  @keyframes confettiFall {
+    0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+  /* Botões de batalha */
+  .battle-actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
+  .battle-actions button { padding: 10px 18px; font-size: .9em; }
+  .btn-skip { background: var(--accent2); }
+  .btn-again { background: var(--green); }
+  .btn-back { background: var(--blue); color: #fff; }
+  /* Resultado */
+  .battle-result { text-align: center; padding: 20px; }
+  .battle-result h2 { font-size: 2em; margin-bottom: 10px; }
+  .battle-result .result-icon { font-size: 4em; margin-bottom: 10px; }
+  .drop-item { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 3px solid var(--ink); border-radius: 10px; padding: 6px 12px; margin: 4px; font-weight: 800; font-size: .85em; }
+
+  /* Loja */
+  .shop-item { display: flex; align-items: center; gap: 10px; }
+  .shop-item .item-icon { width: 44px; height: 44px; border-radius: 10px; border: 3px solid var(--ink); background: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.6em; flex-shrink: 0; }
+  .shop-item .item-info { flex: 1; }
+  .shop-item .item-price { font-weight: 900; font-size: .85em; }
+
+  /* Ranking */
+  .rank-row { display: flex; align-items: center; gap: 10px; }
+  .rank-medal { font-size: 1.4em; width: 36px; text-align: center; }
+  .rank-avatar { width: 36px; height: 36px; border-radius: 50%; border: 3px solid var(--ink); overflow: hidden; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 1.2em; flex-shrink: 0; }
+  .rank-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .rank-name { flex: 1; font-weight: 900; }
+  .rank-rating { font-weight: 800; }
+  .rank-row.top1 { background: linear-gradient(90deg, #ffd70022, #fff); border-color: #ffd700; }
+  .rank-row.top2 { background: linear-gradient(90deg, #c0c0c022, #fff); border-color: #c0c0c0; }
+  .rank-row.top3 { background: linear-gradient(90deg, #cd7f3222, #fff); border-color: #cd7f32; }
+  .rank-row.me { outline: 4px solid var(--accent2); }
+
+  /* PvP */
+  .pvp-opponent { display: flex; align-items: center; gap: 10px; }
+  .pvp-opponent .opp-avatar { width: 44px; height: 44px; border-radius: 10px; border: 3px solid var(--ink); overflow: hidden; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 1.4em; flex-shrink: 0; }
+  .pvp-opponent .opp-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .pvp-opponent .opp-info { flex: 1; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { width: 60px; }
+    .sidebar button { font-size: 0; padding: 10px; text-align: center; }
+    .details-panel { display: none; }
+    .battle-side.left, .battle-side.right { width: 48%; }
+    .battle-avatar { width: 80px; height: 80px; }
+  }
+  .empty { color: #aaa; font-weight: 700; text-align: center; padding: 24px; background: rgba(255,255,255,.06); border: 3px dashed rgba(255,255,255,.2); border-radius: 12px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <h1>🎮 GACHA GAME</h1>
+    <div class="tagline">Colete heróis lendários de vários animes!</div>
+    <div class="tabs">
+      <button id="tabLogin" class="active" onclick="switchTab('login')">Entrar</button>
+      <button id="tabRegister" onclick="switchTab('register')">Criar Conta</button>
+    </div>
+    <div id="loginForm">
+      <div class="form-group"><label>Email</label><input id="loginEmail" type="email" value="admin@gacha.com"></div>
+      <div class="form-group"><label>Senha</label><input id="loginPassword" type="password" value="G@ch@Adm!n2026#Frieren"></div>
+      <button class="btn-primary" onclick="login()">🎮 Entrar</button>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="form-group"><label>Username</label><input id="regUsername" type="text" placeholder="Nome de jogador"></div>
+      <div class="form-group"><label>Email</label><input id="regEmail" type="email" placeholder="seu@email.com"></div>
+      <div class="form-group"><label>Senha</label><input id="regPassword" type="password" placeholder="Mínimo 6 caracteres"></div>
+      <button class="btn-primary" onclick="register()">✨ Criar Conta</button>
+    </div>
+    <div class="login-error" id="loginError"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="topbar">
+    <div class="logo">🎮 GACHA GAME</div>
+    <div class="bag-pill" id="bagPill">📦 0/20</div>
+    <div class="coin gems" id="gemsPill">💎 0</div>
+    <div class="coin gold" id="goldPill">🪙 0</div>
+    <button class="icon-btn" onclick="openDaily()">📅 Diário</button>
+    <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊 Som</button>
+    <button class="icon-btn" onclick="logout()">🚪 Sair</button>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <button onclick="showView('banners')">🎴 Banners</button>
+      <button onclick="showView('units')">🗂️ Unidades</button>
+      <button onclick="showView('items')">🎒 Itens</button>
+      <button onclick="openBosses()">👹 Bosses</button>
+      <button onclick="openMissions()">📜 Missões</button>
+      <button onclick="openPvP()">⚔️ PvP</button>
+      <button onclick="openRanking()">🏆 Ranking</button>
+      <button onclick="openShop()">🏪 Loja</button>
+    </div>
+
+    <div class="main" id="mainView">
+      <!-- Conteúdo dinâmico -->
+    </div>
+
+    <div class="details-panel" id="detailsPanel">
+      <div class="empty">Selecione uma unidade na aba Unidades.</div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modalTitle">Título</h2>
+    <div class="modal-list" id="modalContent"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== Estado ======
+let token = null;
+let currentBanner = null;
+let userData = null;
+let inventory = [];
+let characters = [];
+let teamIds = [];
+let filteredCharacters = [];
+let currentItemTab = 'all';
+let pendingUseItem = null;
+let detailsId = null;
+let currentView = 'banners';
+let soundOn = true;
+let battleTimer = null;
+let battleData = null;
+
+const RARITY_COLORS = { secret:'#ff3b3b', mythic:'#ffc93c', legendary:'#b388ff', epic:'#4f9dde', rare:'#74b9ff', common:'#95a5a6' };
+const ELEMENT_COLORS = { fogo:'#ff8c00', agua:'#0096ff', natureza:'#3cc850', trevas:'#783cb4', luz:'#ffdc50', magia:'#b450ff', ouro:'#ffc800', vazio:'#646478', pedra:'#967850', 'espírito':'#50c8dc' };
+
+// ====== Sons ======
+const SOUNDS = {
+  click: new Audio('/assets/sounds/attack.wav'),
+  attack: new Audio('/assets/sounds/attack.wav'),
+  hit: new Audio('/assets/sounds/hit.wav'),
+  victory: new Audio('/assets/sounds/victory.wav'),
+  defeat: new Audio('/assets/sounds/defeat.wav'),
+  skill: new Audio('/assets/sounds/skill.wav'),
+};
+Object.values(SOUNDS).forEach(s => { s.volume = 0.3; });
+function playSound(name){
+  if(!soundOn) return;
+  try{
+    const s = SOUNDS[name];
+    if(s){ s.currentTime = 0; s.play().catch(()=>{}); }
+  }catch(e){}
+}
+function toggleSound(){
+  soundOn = !soundOn;
+  document.getElementById('soundBtn').textContent = soundOn ? '🔊 Som' : '🔇 Mudo';
+  if(soundOn) playSound('click');
+}
+
+// ====== Utils ======
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => {
+  if (c === '&') return '\x26amp;';
+  if (c === '<') return '\x26lt;';
+  if (c === '>') return '\x26gt;';
+  if (c === '"') return '\x26quot;';
+  return '\x26#39;';
+}); }
+function color(r){ return RARITY_COLORS[r] || '#888'; }
+function elemColor(e){ return ELEMENT_COLORS[e] || '#888'; }
+function fmt(n){ if(n==null||isNaN(n)) return '0'; const suf=[[1e18,'sx'],[1e15,'qd'],[1e12,'t'],[1e9,'b'],[1e6,'m'],[1e3,'k']]; for(const [v,s] of suf){ if(Math.abs(n)>=v){ const x=(n/v).toFixed(1).replace(/\.0$/,''); return x+s; } } return Math.floor(n).toString(); }
+async function api(url, method = 'GET', body = null) {
+  const h = { 'Content-Type': 'application/json' };
+  if (token) h['Authorization'] = 'Bearer ' + token;
+  const opts = { method, headers: h };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(url, opts);
+  const text = await r.text();
+  let d = {};
+  try { d = JSON.parse(text); } catch(e) {}
+  if (!r.ok) throw new Error(d.error || text || `Erro HTTP ${r.status}`);
+  return d;
+}
+function toast(msg, err=false){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=err?'#ffd1d1':'var(--paper)';
+  t.style.color=err?'#a00':'var(--ink)';
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer=setTimeout(()=>t.classList.remove('show'), 3500);
+}
+
+// ====== Auth ======
+function switchTab(tab){
+  document.getElementById('tabLogin').classList.toggle('active',tab==='login');
+  document.getElementById('tabRegister').classList.toggle('active',tab==='register');
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
+  document.getElementById('loginError').style.display='none';
+}
+function showLoginErr(m){ const e=document.getElementById('loginError'); e.textContent=m; e.style.display='block'; }
+async function login(){
+  try{
+    const d=await api('/api/auth/login','POST',{email:document.getElementById('loginEmail').value,password:document.getElementById('loginPassword').value});
+    token=d.token;
+    enterGame();
+  }catch(e){ showLoginErr(e.message); }
+}
+async function register(){
+  try{
+    const d=await api('/api/auth/register','POST',{username:document.getElementById('regUsername').value,email:document.getElementById('regEmail').value,password:document.getElementById('regPassword').value});
+    token=d.token;
+    enterGame();
+    toast('✨ Conta criada!');
+  }catch(e){ showLoginErr(e.message); }
+}
+function logout(){ token=null; document.getElementById('app').style.display='none'; document.getElementById('loginScreen').style.display='flex'; }
+
+async function enterGame(){
+  document.getElementById('loginScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  await refreshAll();
+  showView('banners');
+}
+
+// ====== Dados ======
+async function refreshAll(){
+  await Promise.all([loadAccount(), loadInventory(), loadCharacters(), loadTeam()]);
+}
+async function loadAccount(){
+  try{
+    const d=await api('/api/account');
+    userData=d.user;
+    document.getElementById('bagPill').textContent=`📦 ${d.user.bag_count}/${d.user.bag_limit}`;
+    document.getElementById('gemsPill').textContent=`💎 ${fmt(d.user.gems)}`;
+    document.getElementById('goldPill').textContent=`🪙 ${fmt(d.user.gold)}`;
+  }catch(e){ toast(e.message,true); }
+}
+async function loadInventory(){
+  try{
+    const d=await api('/api/inventory');
+    inventory=d.items;
+    if(currentView==='items') renderItems();
+  }catch(e){}
+}
+async function loadCharacters(){
+  try{
+    const d=await api('/api/account/characters');
+    characters=d.characters;
+    applyFilters();
+    if(detailsId) renderDetails(detailsId);
+    if(currentView==='units') renderUnitGrid();
+  }catch(e){}
+}
+async function loadTeam(){
+  try{
+    const d=await api('/api/account/team');
+    teamIds=d.team.map(c=>c.user_character_id);
+  }catch(e){}
+}
+
+// ====== Views ======
+function showView(view){
+  currentView=view;
+  detailsId=null;
+  document.getElementById('detailsPanel').innerHTML='<div class="empty">Selecione uma unidade na aba Unidades.</div>';
+  if(view==='banners') renderBannersView();
+  else if(view==='units') renderUnits();
+  else if(view==='items') renderItems();
+}
+function setViewHTML(html){ document.getElementById('mainView').innerHTML=html; }
+
+// ====== Banners ======
+async function renderBannersView(){
+  setViewHTML('<div class="empty">Carregando banners...</div>');
+  try{
+    const d=await api('/api/banners');
+    if(!d.banners.length){ setViewHTML('<div class="empty">Sem banners disponíveis.</div>'); return; }
+    currentBanner=d.banners[0];
+    const det=await api('/api/banners/'+currentBanner.id);
+    const visible=det.items.filter(c=>c.rarity!=='secret');
+    const leg=visible.filter(c=>c.rarity==='legendary');
+    const myth=visible.filter(c=>c.rarity==='mythic');
+    const others=visible.filter(c=>c.rarity!=='legendary'&&c.rarity!=='mythic');
+    const left=leg[0]||others[0];
+    const center=myth[0]||leg[1]||others[1];
+    const right=leg[1]||others[2]||leg[0];
+    const shown=[left,center,right].filter(Boolean);
+
+    let cards=shown.map(c=>`
+      <div class="banner-char rarity-${c.rarity}">
+        <div class="avatar">${c.image_url?`<img src="${esc(c.image_url)}">`:'🎭'}</div>
+        <div style="font-weight:900;font-size:.85em">${esc(c.name)}</div>
+        <span class="rarity-badge ${c.rarity}" style="border-color:${color(c.rarity)};color:${color(c.rarity)}">${c.rarity}</span>
+      </div>`).join('');
+
+    setViewHTML(`
+      <div class="banner-card">
+        <h2>${esc(currentBanner.name)}</h2>
+        <div class="desc">${esc(currentBanner.description||'')}</div>
+        <div class="banner-display">${cards}</div>
+        <div class="pull-row">
+          <button class="pull-btn single" onclick="pullGacha(1)">🎯 Pull 1x (100💎)</button>
+          <button class="pull-btn multi" onclick="pullGacha(10)">🔥 Pull 10x (1000💎)</button>
+        </div>
+      </div>
+      <div id="pullResults"></div>`);
+  }catch(e){
+    setViewHTML('<div class="empty">Erro ao carregar banners.</div>');
+  }
+}
+async function pullGacha(qty){
+  if(!currentBanner) return;
+  try{
+    const d=await api(`/api/banners/${currentBanner.id}/pull`,'POST',{quantity:qty});
+    const hasRare=d.results.some(c=>['secret','mythic'].includes(c.rarity));
+    playSound(hasRare?'victory':'skill');
+    const box=document.getElementById('pullResults');
+    box.innerHTML=d.results.map((c,i)=>`
+      <div class="result-card rarity-${c.rarity}" style="animation-delay:${i*0.08}s">
+        <div class="avatar" style="width:60px;height:60px;font-size:2em;margin:0 auto 6px;border:3px solid var(--ink);border-radius:50%">
+          ${c.image_url?`<img src="${esc(c.image_url)}">`:'🎭'}
+        </div>
+        <div style="font-weight:900;font-size:.8em">${esc(c.name)}</div>
+        <span class="rarity-badge ${c.rarity}" style="border-color:${color(c.rarity)};color:${color(c.rarity)}">${c.rarity}</span>
+        <div style="font-size:.65em;color:#666;font-weight:700;margin-top:4px">HP ${c.hp_formatted} · ATK ${c.atk_formatted}</div>
+      </div>`).join('');
+    toast(hasRare?'🎉 SORTE GRANDE!':'Pull realizado!');
+    await refreshAll();
+  }catch(e){ toast(e.message,true); }
+}
+
+// ====== Unidades ======
+function applyFilters(){
+  const q=(document.getElementById('searchInput')?.value||'').toLowerCase();
+  const rf=(document.getElementById('filterRarity')?.value||'all');
+  const ef=(document.getElementById('filterElement')?.value||'all');
+  filteredCharacters=characters.filter(c=>{
+    if(q && !c.name.toLowerCase().includes(q)) return false;
+    if(rf!=='all' && c.rarity!==rf) return false;
+    if(ef!=='all' && c.element!==ef) return false;
+    return true;
+  });
+}
+function renderUnits(){
+  const elements=[...new Set(characters.map(c=>c.element).filter(Boolean))];
+  setViewHTML(`
+    <div class="toolbar">
+      <input type="text" id="searchInput" placeholder="🔍 Buscar por nome..." oninput="applyFilters();renderUnitGrid()">
+      <select id="filterRarity" onchange="applyFilters();renderUnitGrid()">
+        <option value="all">Todas raridades</option>
+        ${Object.keys(RARITY_COLORS).map(r=>`<option value="${r}">${r}</option>`).join('')}
+      </select>
+      <select id="filterElement" onchange="applyFilters();renderUnitGrid()">
+        <option value="all">Todos elementos</option>
+        ${elements.map(e=>`<option value="${esc(e)}">${esc(e)}</option>`).join('')}
+      </select>
+      <button onclick="refreshAll()">🔄</button>
+    </div>
+    <div class="grid" id="unitGrid"></div>`);
+  renderUnitGrid();
+}
+function renderUnitGrid(){
+  const grid=document.getElementById('unitGrid');
+  if(!grid) return;
+  if(!filteredCharacters.length){ grid.innerHTML='<div class="empty" style="grid-column:1/-1">Nenhuma unidade encontrada.</div>'; return; }
+  grid.innerHTML=filteredCharacters.map(c=>{
+    const pct=c.max_hp?Math.round((c.hp/c.max_hp)*100):100;
+    const xpPct=c.level?Math.min(100,Math.round((c.xp||0)/(c.level*100)*100)):0;
+    const idleGif=c.image_idle_url||c.image_url;
+    return `
+    <div class="unit-card rarity-${c.rarity} ${detailsId===c.id?'selected':''}" data-element="${esc(c.element||'')}" onclick="selectUnit(${c.id})">
+      <div class="badges">
+        ${c.is_favorite?'<span class="badge">⭐</span>':''}
+        ${c.is_locked?'<span class="badge">🔒</span>':''}
+        ${teamIds.includes(c.id)?'<span class="badge">⚔️</span>':''}
+      </div>
+      <div class="avatar" style="border:3px solid ${color(c.rarity)}">${idleGif?`<img src="${esc(idleGif)}">`:'🎭'}</div>
+      <div class="uname">${esc(c.name)}</div>
+      <div class="sub">Lv.${c.level} · <span class="rarity-badge ${c.rarity}" style="border-color:${color(c.rarity)};color:${color(c.rarity)}">${c.rarity}</span></div>
+      <div class="hp-bar"><div class="fill" style="width:${pct}%;${pct<30?'background:#e74c3c':''}"></div></div>
+      <div class="xp-bar"><div class="fill" style="width:${xpPct}%"></div></div>
+      <div class="sub">${c.hp_formatted}/${c.max_hp_formatted}</div>
+    </div>`;
+  }).join('');
+}
+async function selectUnit(id){
+  detailsId=id;
+  renderUnitGrid();
+  renderDetails(id);
+}
+async function renderDetails(id){
+  const c=characters.find(x=>x.id===id);
+  const panel=document.getElementById('detailsPanel');
+  if(!panel) return;
+  if(!c){ panel.innerHTML='<div class="empty">Selecione uma unidade.</div>'; return; }
+  const pct=c.max_hp?Math.round((c.hp/c.max_hp)*100):100;
+  const xpPct=c.level?Math.min(100,Math.round((c.xp||0)/(c.level*100)*100)):0;
+  const inTeam=teamIds.includes(c.id);
+  const idleGif=c.image_idle_url||c.image_url;
+  panel.innerHTML=`
+    <div class="avatar" style="border:4px solid ${color(c.rarity)}">${idleGif?`<img src="${esc(idleGif)}">`:'🎭'}</div>
+    <h3>${esc(c.name)} <span class="rarity-badge ${c.rarity}" style="border-color:${color(c.rarity)};color:${color(c.rarity)}">${c.rarity}</span></h3>
+    <div style="text-align:center;font-size:.75em;font-weight:700;color:#555">${esc(c.anime)} · ${esc(c.element||'')} · ${esc(c.role||'')}</div>
+    <div class="stat-row"><span>Nível</span><span>${c.level}</span></div>
+    <div class="stat-row"><span>HP</span><span>${c.hp_formatted} / ${c.max_hp_formatted}</span></div>
+    <div class="hp-bar"><div class="fill" style="width:${pct}%;${pct<30?'background:#e74c3c':''}"></div></div>
+    <div class="stat-row"><span>XP</span><span>${c.xp||0}/${c.level*100}</span></div>
+    <div class="xp-bar"><div class="fill" style="width:${xpPct}%"></div></div>
+    <div class="stat-row"><span>ATK</span><span>${c.atk_formatted}</span></div>
+    <div class="stat-row"><span>DEF</span><span>${c.def_formatted}</span></div>
+    <div class="stat-row"><span>SPD</span><span>${c.speed_formatted}</span></div>
+    <div class="stat-row" style="flex-direction:column;gap:4px"><span>💠 ${esc(c.skill_name||'—')}</span><span style="font-weight:600;font-size:.78em;color:#555">${esc(c.skill_description||'')}</span></div>
+    <div class="details-actions">
+      <button class="action-team" onclick="toggleTeam(${c.id})">${inTeam?'Remover do Time':'⚔️ Entrar no Time'}</button>
+      <button class="action-fav" onclick="toggleFav(${c.id})">${c.is_favorite?'Desfavoritar':'⭐ Favoritar'}</button>
+      <button class="action-lock" onclick="toggleLockUnit(${c.id})">${c.is_locked?'Desbloquear':'🔒 Bloquear'}</button>
+      <button class="action-evolve" onclick="openEvolve(${c.id})">🔮 Evoluir</button>
+      <button class="action-delete" onclick="confirmDelete(${c.id})">🗑️ Deletar/Vender</button>
+    </div>`;
+}
+async function toggleFav(id){ try{ await api(`/api/account/characters/${id}/favorite`,'PUT',{}); await loadCharacters(); toast('⭐ Atualizado'); }catch(e){ toast(e.message,true); } }
+async function toggleLockUnit(id){ try{ await api(`/api/account/characters/${id}/lock`,'PUT',{}); await loadCharacters(); toast('🔒 Atualizado'); }catch(e){ toast(e.message,true); } }
+async function toggleTeam(id){
+  try{
+    let slots=[...teamIds];
+    if(slots.includes(id)) slots=slots.filter(x=>x!==id);
+    else{
+      if(slots.length>=3){ toast('Time cheio! Máximo 3 unidades.',true); return; }
+      slots.push(id);
+    }
+    await api('/api/account/team','PUT',{slots});
+    await loadTeam();
+    await loadCharacters();
+    toast('⚔️ Time atualizado!');
+  }catch(e){ toast(e.message,true); }
+}
+function confirmDelete(id){
+  const c=characters.find(x=>x.id===id);
+  if(!c) return;
+  if(c.is_favorite||c.is_locked){ toast('Desbloqueie/desfaça o favorito antes de deletar.',true); return; }
+  openModal('🗑️ Confirmação',`
+    <div class="confirm-box">
+      <p>Tem certeza que deseja deletar <b>${esc(c.name)}</b> (${c.rarity})?</p>
+      <p style="color:#a00;font-size:.85em">⚠️ Esta ação NÃO pode ser desfeita!</p>
+      <button class="btn-danger" onclick="delChar(${c.id})">SIM, DELETAR</button>
+      <button onclick="closeModal()">Cancelar</button>
+    </div>`);
+}
+async function delChar(id){
+  try{
+    await api('/api/account/characters/'+id,'DELETE');
+    closeModal();
+    detailsId=null;
+    toast('🗑️ Unidade deletada.');
+    await refreshAll();
+  }catch(e){ toast(e.message,true); }
+}
+
+// ====== Evolução ======
+async function openEvolve(id){
+  try{
+    const d=await api(`/api/evolution/character/${id}`);
+    if(!d.evolutions.length){ toast('Este personagem não tem evoluções disponíveis.',true); return; }
+    openModal('🔮 Evolução',`
+      <div class="stat-row"><span>Raridade atual</span><span>${d.character.rarity}</span></div>
+      ${d.evolutions.map(ev=>`
+        <div class="mq-item">
+          <div>
+            <div class="iname">${esc(ev.evolution_name)}</div>
+            <div style="font-size:.75em;font-weight:700;color:#555">
+              Requer: ${ev.required_quantity}x ${esc(ev.required_item)} (você tem ${ev.owned_quantity})
+              · Nova: ${ev.new_rarity} · Stats x${ev.stat_multiplier}
+            </div>
+          </div>
+          <button ${ev.has_item?'':'disabled'} onclick="evolve(${d.character.id},${ev.id})">${ev.has_item?'Evoluir':'Sem itens'}</button>
+        </div>`).join('')}
+    `);
+  }catch(e){ toast(e.message,true); }
+}
+async function evolve(charId, evoId){
+  try{
+    const d=await api('/api/evolution/evolve','POST',{user_character_id:charId,evolution_id:evoId});
+    toast('🔮 '+d.message);
+    closeModal();
+    await refreshAll();
+  }catch(e){ toast(e.message,true); }
+}
+
+// ====== Itens ======
+function renderItems(){
+  const tabs=[['all','Todos'],['potion','🧪 Poções'],['food','🍖 Alimentos'],['material','📦 Materiais'],['ticket','🎫 Tickets']];
+  let items=inventory;
+  if(currentItemTab!=='all') items=inventory.filter(i=>i.item_type===currentItemTab);
+  setViewHTML(`
+    <div class="item-tabs">
+      ${tabs.map(([k,l])=>`<button class="${currentItemTab===k?'active':''}" onclick="currentItemTab='${k}';loadInventory()">${l}</button>`).join('')}
+    </div>
+    <div class="item-list" id="itemList"></div>`);
+  const list=document.getElementById('itemList');
+  if(!items.length){ list.innerHTML='<div class="empty">Nenhum item aqui.</div>'; return; }
+  list.innerHTML=items.map(i=>`
+    <div class="item-card">
+      <div class="info">
+        <div class="iname">${itemIcon(i)} ${esc(i.item_name)} <span class="tag" style="border-color:${color(i.rarity)};color:${color(i.rarity)}">${i.rarity||'—'}</span></div>
+        <div class="idesc">${describeItem(i)}</div>
+      </div>
+      <div class="qty">x${i.quantity}</div>
+      ${(['potion','food'].includes(i.item_type))?`<button class="use-btn" onclick="startUseItem(${i.id})">Usar</button>`:''}
+      ${i.item_type==='ticket'?`<button class="use-btn" onclick="useTicket(${i.id})">Usar</button>`:''}
+    </div>`).join('');
+}
+function itemIcon(i){
+  const icons={potion:'🧪',food:'🍖',material:'📦',ticket:'🎫',equipment:'⚔️'};
+  return icons[i.item_type]||'📦';
+}
+function describeItem(i){
+  const s=i.stats||{};
+  if(i.item_type==='food') return `+${s.xp||50} XP e cura ${s.heal_percent||30}% do HP`;
+  if(i.item_type==='potion') return s.heal_percent?`Cura ${s.heal_percent}% do HP máximo`:`Cura ${s.heal||1000} HP`;
+  if(i.item_type==='ticket') return `+${s.gems||100} gems`;
+  if(i.item_type==='material') return 'Material de evolução';
+  return '';
+}
+async function startUseItem(itemId){
+  if(!characters.length) await loadCharacters();
+  if(!characters.length){ toast('Você não tem personagens para usar isto.',true); return; }
+  pendingUseItem=itemId;
+  const targets=characters.map(c=>`<option value="${c.id}">${esc(c.name)} (Lv.${c.level})</option>`).join('');
+  openModal('🍽️ Usar Item',`
+    <p style="font-weight:700;margin-bottom:10px">Escolha o personagem:</p>
+    <div class="pick-target">
+      <select id="useTarget" style="padding:10px;border:3px solid var(--ink);border-radius:10px;background:#fff;box-shadow:var(--shadow-sm);font-weight:700;width:100%">${targets}</select>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn-primary btn-ok" onclick="useItemOn()">✅ Usar</button>
+      <button onclick="closeModal()">Cancelar</button>
+    </div>`);
+}
+async function useItemOn(){
+  const target=document.getElementById('useTarget').value;
+  try{
+    const d=await api('/api/inventory/use','POST',{item_id:pendingUseItem,quantity:1,user_character_id:parseInt(target)});
+    toast('✅ '+d.message);
+    closeModal();
+    await refreshAll();
+  }catch(e){ toast(e.message,true); }
+}
+async function useTicket(itemId){
+  try{
+    const d=await api('/api/inventory/use','POST',{item_id:itemId,quantity:1});
+    toast('✅ '+d.message);
+    await refreshAll();
+  }catch(e){ toast(e.message,true); }
+}
+
+// ====== Modal ======
+function openModal(title, contentHTML){
+  document.getElementById('modalTitle').textContent=title||'';
+  document.getElementById('modalContent').innerHTML=contentHTML||'';
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('show');
+  if(battleTimer){ clearInterval(battleTimer); battleTimer=null; }
+}
+
+// ====== Bosses ======
+async function openBosses(){
+  openModal('👹 Bosses','<div class="empty">Carregando...</div>');
+  try{
+    const d=await api('/api/bosses');
+    if(!characters.length) await loadCharacters();
+    const teamOpts=characters.map(c=>`<option value="${c.id}">${esc(c.name)} (Lv.${c.level})</option>`).join('');
+    openModal('👹 Bosses',`
+      <div style="font-size:.85em;font-weight:700;margin-bottom:8px">⚠️ O dano recebido na batalha é permanente até usar poções ou alimentos.</div>
+      ${d.bosses.map(b=>`
+        <div class="mq-item boss-card" style="flex-direction:row;align-items:center;gap:10px">
+          <div style="text-align:center">
+            <img src="${b.image_url||'/assets/images/placeholder.png'}" alt="${esc(b.name)}"
+                 style="width:70px;height:70px;border-radius:8px;border:2px solid var(--ink);object-fit:cover">
+          </div>
+          <div style="flex:1">
+            <div class="iname">${esc(b.name)} <span class="tag">${b.difficulty}</span></div>
+            <div style="font-size:.75em;font-weight:700;color:#555">
+              HP ${b.hp_formatted} · ATK ${b.atk_formatted} · DEF ${b.def_formatted}<br>
+              Drops: ${b.drops.map(x=>`${esc(x.item_name)} (${Math.round(x.drop_rate*100)}%)`).join(', ')||'—'}
+            </div>
+          </div>
+          <select class="boss-team" data-boss="${b.id}" multiple size="3" style="padding:6px;border:3px solid var(--ink);border-radius:8px;background:#fff;font-weight:700;width:100%">
+            ${teamOpts}
+          </select>
+          <button onclick="fightBoss(${b.id})" style="margin-top:6px">⚔️ Lutar</button>
+        </div>`).join('')}
+    `);
+  }catch(e){ toast(e.message,true); closeModal(); }
+}
+async function fightBoss(bossId){
+  const sel=document.querySelector(`.boss-team[data-boss="${bossId}"]`);
+  const team=Array.from(sel.selectedOptions).map(o=>parseInt(o.value)).filter(Boolean);
+  if(!team.length){ toast('Selecione o time para lutar.',true); return; }
+  try{
+    const d=await api(`/api/bosses/${bossId}/fight`,'POST',{team});
+    battleData=d;
+    showBossBattle(d);
+    await refreshAll();
+  }catch(e){ toast(e.message,true); }
+}
+
+// ====== CENA DE BATALHA (Boss) ======
+function showBossBattle(d){
+  const boss=d.boss;
+  const team=d.team_status;
+  const bossMaxHp=boss.hp;
+  const bossCurHp=d.boss_hp_remaining;
+  const bossPct=Math.max(0,Math.min(100,Math.round((bossCurHp/bossMaxHp)*100)));
+
+  // Monta os cards do time
+  const teamCards=team.map(c=>{
+    const maxHp=c.max_hp||c.hp;
+    const pct=maxHp?Math.max(0,Math.min(100,Math.round((c.hp/maxHp)*100))):0;
+    const img=c.image_idle_url||c.image_url;
+    return `
+      <div class="battle-unit" id="bu-${c.id}">
+        <div class="battle-avatar small" id="bav-${c.id}">${img?`<img src="${esc(img)}">`:'🎭'}</div>
+        <div class="battle-name">${esc(c.name)}</div>
+        <div class="battle-hp-wrap">
+          <div class="battle-hp-bar"><div class="battle-hp-fill ${pct<30?'low':pct<60?'mid':''}" id="bhp-${c.id}" style="width:${pct}%"></div><div class="battle-hp-text">${fmt(c.hp)}/${fmt(maxHp)}</div></div>
+        </div>
+      </div>`;
+  }).join('');
+
+  openModal(d.victory?'⚔️ Batalha':'⚔️ Batalha',`
+    <div class="battle-scene" id="battleScene">
+      <div class="battle-side left">
+        <div class="battle-avatar" id="bossAvatar">
+          ${boss.image_url?`<img src="${esc(boss.image_url)}">`:'👹'}
+        </div>
+        <div class="battle-name">${esc(boss.name)} <span class="tag">${boss.difficulty}</span></div>
+        <div class="battle-hp-wrap">
+          <div class="battle-hp-label">HP do Boss</div>
+          <div class="battle-hp-bar"><div class="battle-hp-fill ${bossPct<30?'low':bossPct<60?'mid':''}" id="bossHpFill" style="width:${bossPct}%"></div><div class="battle-hp-text" id="bossHpText">${fmt(bossCurHp)}/${fmt(bossMaxHp)}</div></div>
+        </div>
+      </div>
+      <div class="battle-side right">
+        <div class="battle-team">${teamCards}</div>
+      </div>
+      <div style="clear:both"></div>
+      <div class="battle-log" id="battleLog"></div>
+    </div>
+    <div class="battle-actions">
+      <button class="btn-skip" onclick="skipBattle()">⏩ Pular animação</button>
+      <button class="btn-again" onclick="closeModal();openBosses()">⚔️ Lutar novamente</button>
+      <button class="btn-back" onclick="closeModal()">✕ Fechar</button>
+    </div>
+  `);
+
+  // Inicia o replay da batalha
+  startBattleReplay(d);
+}
+
+function startBattleReplay(d){
+  if(battleTimer){ clearInterval(battleTimer); battleTimer=null; }
+  const events=d.events||[];
+  const logBox=document.getElementById('battleLog');
+  let idx=0;
+  const bossAvatar=document.getElementById('bossAvatar');
+  const bossHpFill=document.getElementById('bossHpFill');
+  const bossHpText=document.getElementById('bossHpText');
+  const bossMaxHp=d.boss.hp;
+
+  // Estado inicial do HP
+  const teamHp={};
+  d.team_status.forEach(c=>{ teamHp[c.id]=c.hp; });
+
+  function updateBossHp(hp){
+    const pct=Math.max(0,Math.min(100,Math.round((hp/bossMaxHp)*100)));
+    if(bossHpFill){
+      bossHpFill.style.width=pct+'%';
+      bossHpFill.className='battle-hp-fill '+(pct<30?'low':pct<60?'mid':'');
+    }
+    if(bossHpText) bossHpText.textContent=fmt(hp)+'/'+fmt(bossMaxHp);
+  }
+  function updateCharHp(id,hp){
+    const fill=document.getElementById('bhp-'+id);
+    const unit=document.getElementById('bu-'+id);
+    if(!fill) return;
+    const maxHp=d.team_status.find(c=>c.id===id)?.max_hp||hp;
+    const pct=maxHp?Math.max(0,Math.min(100,Math.round((hp/maxHp)*100))):0;
+    fill.style.width=pct+'%';
+    fill.className='battle-hp-fill '+(pct<30?'low':pct<60?'mid':'');
+    if(unit){
+      const text=unit.querySelector('.battle-hp-text');
+      if(text) text.textContent=fmt(hp)+'/'+fmt(maxHp);
+    }
+  }
+  function showDmg(targetEl, dmg, isHeal){
+    if(!targetEl) return;
+    const rect=targetEl.getBoundingClientRect();
+    const num=document.createElement('div');
+    num.className='dmg-num'+(isHeal?' heal':'');
+    num.textContent=(isHeal?'+':'-')+fmt(dmg);
+    num.style.left=(rect.left+rect.width/2-20)+'px';
+    num.style.top=(rect.top+10)+'px';
+    document.body.appendChild(num);
+    setTimeout(()=>num.remove(),1000);
+  }
+  function shake(el){
+    if(!el) return;
+    el.classList.remove('shake');
+    void el.offsetWidth;
+    el.classList.add('shake');
+  }
+  function addLogLine(text, cls){
+    if(!logBox) return;
+    const div=document.createElement('div');
+    div.className=cls||'';
+    div.textContent='• '+text;
+    logBox.appendChild(div);
+    logBox.scrollTop=logBox.scrollHeight;
+  }
+
+  battleTimer=setInterval(()=>{
+    if(idx>=events.length){
+      clearInterval(battleTimer);
+      battleTimer=null;
+      // Mostra o resultado final
+      showBattleResult(d);
+      return;
+    }
+    const ev=events[idx];
+    idx++;
+
+    if(ev.type==='player_attack'){
+      playSound('attack');
+      // Anima o personagem atacando
+      const atkEl=document.getElementById('bav-'+ev.attacker_id);
+      if(atkEl){
+        const gif=ev.attacker_id?d.team_status.find(c=>c.id===ev.attacker_id)?.gif_attack_url:null;
+        if(gif) atkEl.innerHTML=`<img src="${esc(gif)}">`;
+        shake(atkEl);
+        setTimeout(()=>{
+          const idle=d.team_status.find(c=>c.id===ev.attacker_id)?.image_idle_url||d.team_status.find(c=>c.id===ev.attacker_id)?.image_url;
+          if(idle) atkEl.innerHTML=`<img src="${esc(idle)}">`;
+        },600);
+      }
+      // Shake no boss
+      shake(bossAvatar);
+      showDmg(bossAvatar, ev.damage);
+      updateBossHp(ev.boss_hp);
+      addLogLine(`Turno ${ev.turn}: ${ev.attacker} causa ${ev.damage_formatted} de dano no boss.`,'log-player');
+    }
+    else if(ev.type==='boss_attack'){
+      playSound('hit');
+      // Anima o boss atacando
+      if(bossAvatar && boss.gif_attack_url){
+        bossAvatar.innerHTML=`<img src="${esc(boss.gif_attack_url)}">`;
+        setTimeout(()=>{
+          if(boss.image_url) bossAvatar.innerHTML=`<img src="${esc(boss.image_url)}">`;
+        },600);
+      }
+      shake(bossAvatar);
+      // Dano no personagem
+      const targetEl=document.getElementById('bav-'+ev.target_id);
+      shake(targetEl);
+      showDmg(targetEl, ev.damage);
+      updateCharHp(ev.target_id, ev.char_hp);
+      addLogLine(`Turno ${ev.turn}: ${ev.attacker} causa ${ev.damage_formatted} de dano em ${ev.target}.`,'log-boss');
+    }
+    else if(ev.type==='player_defeated'){
+      playSound('defeat');
+      const targetEl=document.getElementById('bav-'+ev.target_id);
+      if(targetEl){
+        targetEl.style.opacity='0.3';
+        targetEl.style.filter='grayscale(100%)';
+      }
+      updateCharHp(ev.target_id, 0);
+      addLogLine(`${ev.target} foi derrotado!`,'log-death');
+    }
+  }, 800);
+}
+
+function skipBattle(){
+  if(battleTimer){ clearInterval(battleTimer); battleTimer=null; }
+  if(battleData) showBattleResult(battleData);
+}
+
+function showBattleResult(d){
+  const logBox=document.getElementById('battleLog');
+  if(logBox){
+    logBox.innerHTML='';
+    d.log.forEach(l=>{
+      const div=document.createElement('div');
+      div.textContent='• '+l;
+      logBox.appendChild(div);
+    });
+    logBox.scrollTop=logBox.scrollHeight;
+  }
+  // Mostra o resultado
+  const scene=document.getElementById('battleScene');
+  if(!scene) return;
+  if(d.victory){
+    playSound('victory');
+    launchConfetti();
+  } else {
+    playSound('defeat');
+  }
+  const dropsHtml=d.drops&&d.drops.length?d.drops.map(x=>`<span class="drop-item">📦 ${esc(x.item_name)} x${x.quantity}</span>`).join(''):'<span style="color:#999">Nenhum drop</span>';
+  const resultDiv=document.createElement('div');
+  resultDiv.className='battle-result';
+  resultDiv.innerHTML=`
+    <div class="result-icon">${d.victory?'🏆':'💀'}</div>
+    <h2 style="color:${d.victory?'var(--green)':'var(--accent)'}">${d.victory?'VITÓRIA!':'DERROTA...'}</h2>
+    <p style="font-weight:700;margin-bottom:10px">${d.victory?'Você derrotou '+esc(d.boss.name)+'!':'Você foi derrotado por '+esc(d.boss.name)+'.'}</p>
+    ${d.victory?`<div style="margin-bottom:8px"><strong>Drops:</strong><br>${dropsHtml}</div>`:''}
+    <div class="stat-row"><span>HP restante do boss</span><span>${d.boss_hp_formatted}</span></div>
+  `;
+  scene.appendChild(resultDiv);
+}
+
+// ====== Confete ======
+function launchConfetti(){
+  const colors=['#ff3b3b','#ffc93c','#3ddc84','#4f9dde','#b388ff','#ff8c00'];
+  for(let i=0;i<60;i++){
+    const c=document.createElement('div');
+    c.className='confetti';
+    c.style.left=Math.random()*100+'vw';
+    c.style.background=colors[Math.floor(Math.random()*colors.length)];
+    c.style.width=(Math.random()*8+4)+'px';
+    c.style.height=(Math.random()*8+4)+'px';
+    c.style.animationDuration=(Math.random()*2+2)+'s';
+    c.style.animationDelay=(Math.random()*0.5)+'s';
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(),4000);
+  }
+}
+
+// ====== Missões ======
+async function openMissions(){
+  openModal('📜 Missões','<div class="empty">Carregando...</div>');
+  try{
+    const d=await api('/api/missions');
+    const sections=[['daily','Diárias'],['weekly','Semanais'],['story','História']];
+    let html='';
+    for(const [type,label] of sections){
+      const list=d.grouped[type]||[];
+      html+=`<div style="font-weight:900;font-size:1em;margin:10px 0 6px">${label}</div>`;
+      if(!list.length){ html+='<div class="empty">Nada aqui.</div>'; continue; }
+      html+=list.map(m=>{
+        const pct=Math.min(100,Math.round((m.progress/m.objective_target)*100));
+        const done=m.is_completed&&!m.claimed_at;
+        const claimed=!!m.claimed_at;
+        return `
+        <div class="mq-item">
+          <div style="flex:1">
+            <div class="iname">${esc(m.name)} ${claimed?'<span class="claimed">✅ Feita</span>':done?'<span class="claimable">💰 Pronta!</span>':''}</div>
+            <div style="font-size:.72em;color:#555;font-weight:700">${esc(m.description)}</div>
+            <div style="font-size:.72em;font-weight:700">Recompensa: +${m.reward_gems}💎 +${m.reward_gold}🪙</div>
+            <div class="progress-bar"><div class="fill" style="width:${pct}%"></div></div>
+            <div style="font-size:.65em;font-weight:700">${m.progress}/${m.objective_target}</div>
+          </div>
+          <button ${done?'':'disabled'} onclick="claimMission(${m.id})">${claimed?'Feita':'Reivindicar'}</button>
+        </div>`;
+      }).join('');
+    }
+    openModal('📜 Missões',html);
+  }catch(e){ toast(e.message,true); closeModal(); }
+}
+async function claimMission(id){
+  try{
+    const d=await api(`/api/missions/${id}/claim`,'POST',{});
+    toast('✅ '+d.message);
+    await refreshAll();
+    openMissions();
+  }catch(e){ toast(e.message,true); }
+}
+
+// ====== Login diário ======
+async function openDaily(){
+  openModal('📅 Login Diário','<div class="empty">Carregando...</div>');
+  try{
+    const d=await api('/api/missions/daily-login');
+    const rewards=d.rewards.map(r=>`
+      <div class="mq-item" style="${r.day===d.next_day?'outline:4px solid var(--accent2);':''}">
+        <div class="iname">Dia ${r.day} ${r.day===d.next_day?'← próximo':''}</div>
+        <div style="font-weight:700;font-size:.85em">+${r.gems}💎 +${r.gold}🪙</div>
+      </div>`).join('');
+    openModal('📅 Login Diário',`
+      <div class="stat-row"><span>Streak atual</span><span>${d.streak} dias 🔥</span></div>
+      <div class="stat-row"><span>Total de dias</span><span>${d.total_days}</span></div>
+      <div style="margin-top:12px">${rewards}</div>
+      <div style="margin-top:14px">
+        <button class="btn-primary btn-ok" ${d.can_claim?'':'disabled'} onclick="claimDaily()">${d.can_claim?'Reivindicar dia '+d.next_day:'Já reivindicado hoje'}</button>
+      </div>`);
+  }catch(e){ toast(e.message,true); closeModal(); }
+}
+async function claimDaily(){
+  try{
+    const d=await api('/api/missions/daily-login/claim','POST',{});
+    toast('✅ '+d.message);
+    await refreshAll();
+    openDaily();
+  }catch(e){ toast(e.message,true); }
+}
+
+// ====== PvP ======
+async function openPvP(){
+  openModal('⚔️ PvP','<div class="empty">Carregando...</div>');
+  try{
+    const [rank,opps]=await Promise.all([api('/api/pvp/ranking'),api('/api/pvp/opponents')]);
+    openModal('⚔️ PvP',`
+      <div class="stat-row"><span>Seu rating</span><span>${rank.my_rating} (posição ${rank.my_position||'-'}ª)</span></div>
+      <div style="font-size:.85em;font-weight:700;color:#555;margin:10px 0">Recentes: ${rank.my_wins}V ${rank.my_losses}D</div>
+      <div style="font-weight:900;font-size:1em;margin:8px 0">Oponentes</div>
+      ${opps.opponents.length?opps.opponents.map(o=>`
+        <div class="mq-item">
+          <div class="pvp-opponent">
+            <div class="opp-avatar">${o.team_avatar?`<img src="${esc(o.team_avatar)}">`:'🎭'}</div>
+            <div class="opp-info">
+              <div class="iname">${esc(o.username)}</div>
+              <div style="font-size:.72em;font-weight:700;color:#555">Rating ${o.rating} · ${o.wins}V ${o.losses}D · ${o.units_count} unidades</div>
+            </div>
+          </div>
+          <button onclick="challengePvP(${o.user_id})">⚔️ Desafiar</button>
+        </div>`).join(''):'<div class="empty">Nenhum oponente com time disponível.</div>'}
+    `);
+  }catch(e){ toast(e.message,true); closeModal(); }
+}
+async function challengePvP(defenderId){
+  try{
+    const d=await api('/api/pvp/battle','POST',{defender_id:defenderId});
+    battleData=d;
+    showPvPBattle(d);
+    await refreshAll();
+  }catch(e){ toast(e.message,true); }
+}
+
+// ====== CENA DE BATALHA (PvP) ======
+function showPvPBattle(d){
+  const myTeam=d.attacker_team||[];
+  const oppTeam=d.defender_team||[];
+  const events=d.events||[];
+
+  // Monta os times
+  function teamCards(team, prefix){
+    return team.map(c=>{
+      const maxHp=c.max_hp||c.hp;
+      const pct=maxHp?Math.max(0,Math.min(100,Math.round((c.hp/maxHp)*100))):0;
+      const img=c.image_idle_url||c.image_url;
+      return `
+        <div class="battle-unit" id="${prefix}-${c.user_character_id}">
+          <div class="battle-avatar small" id="${prefix}-av-${c.user_character_id}">${img?`<img src="${esc(img)}">`:'🎭'}</div>
+          <div class="battle-name">${esc(c.name)}</div>
+          <div class="battle-hp-wrap">
+            <div class="battle-hp-bar"><div class="battle-hp-fill ${pct<30?'low':pct<60?'mid':''}" id="${prefix}-hp-${c.user_character_id}" style="width:${pct}%"></div><div class="battle-hp-text">${fmt(c.hp)}/${fmt(maxHp)}</div></div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  openModal(d.victory?'🏆 Vitória!':'💀 Derrota...',`
+    <div class="battle-scene" id="battleScene">
+      <div class="battle-side left">
+        <div style="font-weight:900;color:#fff;text-shadow:2px 2px 0 #000;margin-bottom:8px">${esc(d.opponent.username)}</div>
+        <div class="battle-team">${teamCards(oppTeam,'opp')}</div>
+      </div>
+      <div class="battle-side right">
+        <div style="font-weight:900;color:#fff;text-shadow:2px 2px 0 #000;margin-bottom:8px">Seu Time</div>
+        <div class="battle-team">${teamCards(myTeam,'my')}</div>
+      </div>
+      <div style="clear:both"></div>
+      <div class="battle-log" id="battleLog"></div>
+    </div>
+    <div class="battle-actions">
+      <button class="btn-skip" onclick="skipBattle()">⏩ Pular animação</button>
+      <button class="btn-again" onclick="closeModal();openPvP()">⚔️ Lutar novamente</button>
+      <button class="btn-back" onclick="closeModal()">✕ Fechar</button>
+    </div>
+  `);
+
+  // Replay
+  if(battleTimer){ clearInterval(battleTimer); battleTimer=null; }
+  const logBox=document.getElementById('battleLog');
+  let idx=0;
+
+  function getEl(prefix,id){ return document.getElementById(prefix+'-av-'+id); }
+  function getHpEl(prefix,id){ return document.getElementById(prefix+'-hp-'+id); }
+  function updateHp(prefix,id,hp){
+    const fill=getHpEl(prefix,id);
+    const unit=document.getElementById(prefix+'-'+id);
+    if(!fill) return;
+    const team=prefix==='my'?myTeam:oppTeam;
+    const maxHp=team.find(c=>c.user_character_id===id)?.max_hp||hp;
+    const pct=maxHp?Math.max(0,Math.min(100,Math.round((hp/maxHp)*100))):0;
+    fill.style.width=pct+'%';
+    fill.className='battle-hp-fill '+(pct<30?'low':pct<60?'mid':'');
+    if(unit){
+      const text=unit.querySelector('.battle-hp-text');
+      if(text) text.textContent=fmt(hp)+'/'+fmt(maxHp);
+    }
+  }
+  function showDmg(el,dmg){
+    if(!el) return;
+    const rect=el.getBoundingClientRect();
+    const num=document.createElement('div');
+    num.className='dmg-num';
+    num.textContent='-'+fmt(dmg);
+    num.style.left=(rect.left+rect.width/2-20)+'px';
+    num.style.top=(rect.top+10)+'px';
+    document.body.appendChild(num);
+    setTimeout(()=>num.remove(),1000);
+  }
+  function shake(el){
+    if(!el) return;
+    el.classList.remove('shake');
+    void el.offsetWidth;
+    el.classList.add('shake');
+  }
+  function addLogLine(text,cls){
+    if(!logBox) return;
+    const div=document.createElement('div');
+    div.className=cls||'';
+    div.textContent='• '+text;
+    logBox.appendChild(div);
+    logBox.scrollTop=logBox.scrollHeight;
+  }
+
+  battleTimer=setInterval(()=>{
+    if(idx>=events.length){
+      clearInterval(battleTimer);
+      battleTimer=null;
+      showPvPResult(d);
+      return;
+    }
+    const ev=events[idx];
+    idx++;
+    playSound('attack');
+    // Determina se o atacante é do meu time ou do oponente
+    const isMyAttack=myTeam.some(c=>c.user_character_id===ev.attacker_id);
+    const atkPrefix=isMyAttack?'my':'opp';
+    const tgtPrefix=isMyAttack?'opp':'my';
+    const atkEl=getEl(atkPrefix,ev.attacker_id);
+    const tgtEl=getEl(tgtPrefix,ev.target_id);
+    shake(atkEl);
+    shake(tgtEl);
+    showDmg(tgtEl,ev.damage);
+    updateHp(tgtPrefix,ev.target_id,ev.target_hp);
+    addLogLine(`Turno ${ev.turn}: ${ev.attacker} ataca ${ev.target} (-${ev.damage_formatted})`,isMyAttack?'log-player':'log-boss');
+    if(ev.type==='defeated'){
+      if(tgtEl){ tgtEl.style.opacity='0.3'; tgtEl.style.filter='grayscale(100%)'; }
+      addLogLine(`${ev.target} foi derrotado!`,'log-death');
+    }
+  },800);
+}
+
+function showPvPResult(d){
+  const logBox=document.getElementById('battleLog');
+  if(logBox){
+    logBox.innerHTML='';
+    d.log.forEach(l=>{
+      const div=document.createElement('div');
+      div.textContent='• '+l;
+      logBox.appendChild(div);
+    });
+    logBox.scrollTop=logBox.scrollHeight;
+  }
+  const scene=document.getElementById('battleScene');
+  if(!scene) return;
+  if(d.victory){ playSound('victory'); launchConfetti(); } else { playSound('defeat'); }
+  const resultDiv=document.createElement('div');
+  resultDiv.className='battle-result';
+  resultDiv.innerHTML=`
+    <div class="result-icon">${d.victory?'🏆':'💀'}</div>
+    <h2 style="color:${d.victory?'var(--green)':'var(--accent)'}">${d.victory?'VITÓRIA!':'DERROTA...'}</h2>
+    <p style="font-weight:700;margin-bottom:10px">${esc(d.message)}</p>
+    <div class="stat-row"><span>Rating</span><span>${d.rating_change>0?'+':''}${d.rating_change} → ${d.new_rating}</span></div>
+  `;
+  scene.appendChild(resultDiv);
+}
+
+// ====== Ranking ======
+async function openRanking(){
+  openModal('🏆 Ranking','<div class="empty">Carregando...</div>');
+  try{
+    const d=await api('/api/pvp/ranking');
+    const medal=['🥇','🥈','🥉'];
+    const medalColors=['#ffd700','#c0c0c0','#cd7f32'];
+    openModal('🏆 Ranking Global',`
+      <div class="stat-row" style="outline:4px solid var(--accent2)"><span>⭐ Você</span><span>${d.my_rating} (${d.my_position?'posição '+d.my_position+'ª':'—'})</span></div>
+      <div style="margin-top:12px">
+        ${d.ranking.map((r,i)=>{
+          const isMe=r.user_id===userData?.id;
+          const topClass=i<3?`top${i+1}`:'';
+          return `
+          <div class="mq-item rank-row ${topClass} ${isMe?'me':''}">
+            <div class="rank-medal" style="${i<3?`color:${medalColors[i]};text-shadow:0 0 8px ${medalColors[i]}`:''}">${medal[i]||(i+1)+'º'}</div>
+            <div class="rank-avatar">${r.avatar_url?`<img src="${esc(r.avatar_url)}">`:'🎭'}</div>
+            <div class="rank-name">${esc(r.username)} ${isMe?'<span class="tag" style="background:var(--accent2)">Você</span>':''}</div>
+            <div class="rank-rating">${r.rating} <span style="color:#555;font-size:.75em">${r.winrate}% Vit.</span></div>
+          </div>`;
+        }).join('')}
+      </div>`);
+  }catch(e){ toast(e.message,true); closeModal(); }
+}
+
+// ====== Loja ======
+async function openShop(){
+  openModal('🏪 Loja','<div class="empty">Carregando...</div>');
+  try{
+    const d=await api('/api/shop');
+    const itemIcons={luck_potion:'🍀',luck_scroll:'📜',gacha_ticket:'🎫',heal_potion:'🧪',picanha_anja:'🍖',miojo_ramen:'🍜',bom_hamburguer:'🍔',churros:'🥖',empadao:'🥧'};
+    let html=`<div style="font-weight:900;font-size:1em;margin-bottom:8px">🛒 Itens</div>`;
+    html+=d.items.map(it=>{
+      const price=it.price_gems!==null?`${it.price_gems}💎`:`${it.price_gold}🪙`;
+      return `
+      <div class="mq-item">
+        <div class="shop-item">
+          <div class="item-icon">${itemIcons[it.id]||'📦'}</div>
+          <div class="item-info">
+            <div class="iname">${esc(it.name)} <span class="tag" style="border-color:${color(it.rarity)};color:${color(it.rarity)}">${it.rarity}</span></div>
+            <div style="font-size:.72em;color:#555;font-weight:700">${esc(it.description)}</div>
+            <div class="item-price">${price}</div>
+          </div>
+        </div>
+        <button onclick="buyShopItem('${it.id}')">Comprar</button>
+      </div>`;
+    }).join('');
+    html+=`<div style="font-weight:900;font-size:1em;margin:12px 0 8px">💰 Venda de Personagens</div>
+    <div style="font-size:.8em;font-weight:700;display:grid;grid-template-columns:1fr 1fr;gap:4px">
+      <div>Common: 100🪙</div><div>Rare: 500🪙</div>
+      <div>Epic: 2.000🪙</div><div>Legendary: 20💎</div>
+      <div>Mythic: 50💎</div><div>Secret: 100💎</div>
+    </div>
+    <div style="font-size:.7em;color:#555;font-weight:700;margin-top:6px">💡 Lendários+ são vendidos por gems automaticamente ao deletar.</div>`;
+    openModal('🏪 Loja',html);
+  }catch(e){ toast(e.message,true); closeModal(); }
+}
+async function buyShopItem(id){
+  try{
+    const d=await api('/api/shop/buy','POST',{item_id:id,quantity:1});
+    playSound('click');
+    toast('✅ '+d.message);
+    await refreshAll();
+    openShop();
+  }catch(e){ toast(e.message,true); }
+}
+
+// ====== Inicialização ======
+document.getElementById('loginScreen').style.display='flex';
+document.getElementById('app').style.display='none';
+</script>
+</body>
+</html>

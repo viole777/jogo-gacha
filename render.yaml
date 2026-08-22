@@ -1,0 +1,60 @@
+# =============================================
+# Deploy no Render (Free Plan)
+# =============================================
+# Este arquivo configura o deploy automático no Render.
+# Para usar:
+#   1. Commit este arquivo na raiz do repo
+#   2. Crie um "Web Service" no painel do Render
+#   3. Conecte seu repositório (GitHub/GitLab)
+#   4. O Render detecta render.yaml automaticamente
+#
+# Free Plan limits (plan: free):
+#   - 512 MB RAM / 0.5 vCPU
+#   - 1 GB disc (ephemeral - perdido em redeploy)
+#   - Service "sleep" após 15 min sem requests (gratuito)
+#   - HTTP em https://seu-servico.onrender.com
+#   - Sem DB gerenciado (SQLite usado localmente)
+#
+# Observações importantes:
+#   - O SQLite usa o disco local; dados são recriados via seed() no startup
+#   - Em redeploy ou scale, o DB é recriado automaticamente
+#   - User data é perdido em redeploy, mas persiste entre sleep/wake
+
+services:
+  - type: web
+    name: gacha-game-api
+    region: oregon
+    plan: free
+    env: node
+    # Build: instala dependências Node.js (inclui better-sqlite3)
+    buildCommand: npm install --production
+    # Start: inicia o servidor Express (usa PORT do ambiente do Render)
+    startCommand: node server/index.js
+    # Health check para o load balancer do Render
+    healthCheckPath: /api/health
+    # Timeout de startup (segundos) - seed pode levar alguns segundos
+    startupTimeout: 120
+    # Auto-deploy: novo deploy em cada push na branch default
+    autoDeploy: true
+    envVars:
+      # =============================================
+      NODE_ENV: production
+
+      # Porta é fornecida automaticamente pelo Render
+      # PORT: 10000
+
+      # =============================================
+      # JWT Secret - GERE UM VALOR ÚNICO EM PRODUÇÃO!
+      # No painel do Render > Settings > Environment > Add Secret
+      # NÃO exponha a secret real no repo. Deixe em branco aqui
+      # e configure via dashboard: JWT_SECRET
+      # =============================================
+      # JWT_SECRET: <configure-no-dashboard-render>
+
+      # JWT expiration
+      JWT_EXPIRES_IN: 7d
+
+      # =============================================
+      # Admin - crie via dashboard secrets também
+      # ADMIN_PASSWORD: <configure-no-dashboard-render>
+      # =============================================

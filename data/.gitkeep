@@ -1,0 +1,3 @@
+# Este arquivo garante que o diretório data/ seja rastreado no git.
+# O banco SQLite (data/gacha-game.db) é ignorado pelo .gitignore (*.db).
+# Na inicialização, o seed() cria/atualiza o DB automaticamente.
