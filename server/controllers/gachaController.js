@@ -1,26 +1,52 @@
 const db = require('../database');
 const { formatNumber } = require('../utils/formatNumber');
 const { registerProgress } = require('./missionController');
+const crypto = require('crypto');
 
 // Custo de pull em gems
 const PULL_COST = 100;
 const MULTI_PULL_COST = 1000; // 10x com desconto
+const BANNER_ROTATION_MS = 2 * 60 * 60 * 1000;
+
+function getCurrentBanner() {
+  const banners = db
+    .prepare(
+      `SELECT b.id, b.name, b.description, b.image_url, b.start_date, b.end_date, b.is_active, b.created_at
+       FROM banners b
+       WHERE b.is_active = 1
+         AND EXISTS (SELECT 1 FROM banner_items bi WHERE bi.banner_id = b.id)
+       ORDER BY b.id`
+    )
+    .all();
+
+  if (banners.length === 0) return null;
+
+  const rotationWindow = Math.floor(Date.now() / BANNER_ROTATION_MS);
+  const hash = crypto.createHash('sha256').update(String(rotationWindow)).digest();
+  const randomIndex = hash.readUInt32BE(0) % banners.length;
+  const nextRotationAt = new Date((rotationWindow + 1) * BANNER_ROTATION_MS);
+
+  return {
+    banner: banners[randomIndex],
+    rotationWindow,
+    nextRotationAt: nextRotationAt.toISOString(),
+    totalBanners: banners.length,
+  };
+}
 
 /**
  * Lista os banners ativos
  * GET /api/banners
  */
 function getBanners(req, res) {
-  const banners = db
-    .prepare(
-      `SELECT id, name, description, image_url, start_date, end_date, is_active, created_at
-       FROM banners
-       WHERE is_active = 1
-       ORDER BY created_at DESC`
-    )
-    .all();
+  const rotation = getCurrentBanner();
 
-  return res.json({ banners });
+  return res.json({
+    banners: rotation ? [rotation.banner] : [],
+    rotates_every_hours: 2,
+    next_rotation_at: rotation?.nextRotationAt || null,
+    available_banner_count: rotation?.totalBanners || 0,
+  });
 }
 
 /**
@@ -29,8 +55,11 @@ function getBanners(req, res) {
  */
 function getBannerDetails(req, res) {
   const bannerId = req.params.id;
+  const rotation = getCurrentBanner();
 
-  const banner = db.prepare('SELECT * FROM banners WHERE id = ? AND is_active = 1').get(bannerId);
+  const banner = rotation && String(rotation.banner.id) === String(bannerId)
+    ? db.prepare('SELECT * FROM banners WHERE id = ? AND is_active = 1').get(bannerId)
+    : null;
 
   if (!banner) {
     return res.status(404).json({ error: 'Banner não encontrado' });
@@ -61,6 +90,7 @@ function getBannerDetails(req, res) {
 
   return res.json({
     banner,
+    next_rotation_at: rotation.nextRotationAt,
     pull_cost: PULL_COST,
     multi_pull_cost: MULTI_PULL_COST,
     items,
@@ -81,8 +111,11 @@ function pull(req, res) {
     return res.status(400).json({ error: 'Quantidade deve ser 1 ou 10' });
   }
 
-  // Verifica se o banner existe e está ativo
-  const banner = db.prepare('SELECT * FROM banners WHERE id = ? AND is_active = 1').get(bannerId);
+  // Só o banner sorteado para a janela atual pode receber pulls.
+  const rotation = getCurrentBanner();
+  const banner = rotation && String(rotation.banner.id) === String(bannerId)
+    ? db.prepare('SELECT * FROM banners WHERE id = ? AND is_active = 1').get(bannerId)
+    : null;
   if (!banner) {
     return res.status(404).json({ error: 'Banner não encontrado' });
   }

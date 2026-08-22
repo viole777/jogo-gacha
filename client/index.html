@@ -437,6 +437,7 @@ let detailsId = null;
 let currentView = 'banners';
 let soundOn = true;
 let battleTimer = null;
+let bannerRotationTimer = null;
 let battleData = null;
 
 const RARITY_COLORS = { secret:'#ff3b3b', mythic:'#ffc93c', legendary:'#b388ff', epic:'#4f9dde', rare:'#74b9ff', common:'#95a5a6' };
@@ -578,6 +579,15 @@ function showView(view){
 }
 function setViewHTML(html){ document.getElementById('mainView').innerHTML=html; }
 
+function scheduleBannerRotation(nextRotationAt){
+  if(bannerRotationTimer) clearTimeout(bannerRotationTimer);
+  const delay=Math.max(1000,new Date(nextRotationAt).getTime()-Date.now()+250);
+  bannerRotationTimer=setTimeout(()=>{
+    bannerRotationTimer=null;
+    if(currentView==='banners') renderBannersView();
+  },delay);
+}
+
 // ====== Banners ======
 async function renderBannersView(){
   setViewHTML('<div class="empty">Carregando banners...</div>');
@@ -585,6 +595,7 @@ async function renderBannersView(){
     const d=await api('/api/banners');
     if(!d.banners.length){ setViewHTML('<div class="empty">Sem banners disponíveis.</div>'); return; }
     currentBanner=d.banners[0];
+    if(d.next_rotation_at) scheduleBannerRotation(d.next_rotation_at);
     const det=await api('/api/banners/'+currentBanner.id);
     const visible=det.items.filter(c=>c.rarity!=='secret');
     const leg=visible.filter(c=>c.rarity==='legendary');

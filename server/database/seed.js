@@ -774,6 +774,36 @@ function seed() {
     console.log('✅ Itens dos banners associados');
   }
 
+  const newCharacterNames = [
+    'Naruto Uzumaki', 'Sasuke Uchiha', 'Monkey D. Luffy', 'Roronoa Zoro',
+    'Tanjiro Kamado', 'Nezuko Kamado', 'Satoru Gojo', 'Yuji Itadori',
+    'Goku', 'Vegeta', 'Saitama', 'Genos', 'Eren Yeager', 'Mikasa Ackerman',
+    'Kirito', 'Asuna',
+  ];
+  const namePlaceholders = newCharacterNames.map(() => '?').join(', ');
+  const newCharacterIds = db
+    .prepare(`SELECT id FROM characters WHERE name IN (${namePlaceholders})`)
+    .all(...newCharacterNames)
+    .map((character) => character.id);
+  const idPlaceholders = newCharacterIds.map(() => '?').join(', ');
+
+  if (newCharacterIds.length > 0) {
+    db.transaction(() => {
+      db.prepare(`DELETE FROM user_teams WHERE user_character_id IN (SELECT id FROM user_characters WHERE character_id IN (${idPlaceholders}))`).run(...newCharacterIds);
+      db.prepare(`DELETE FROM user_characters WHERE character_id IN (${idPlaceholders})`).run(...newCharacterIds);
+      db.prepare(`DELETE FROM banner_items WHERE character_id IN (${idPlaceholders})`).run(...newCharacterIds);
+      db.prepare(`DELETE FROM character_evolutions WHERE character_id IN (${idPlaceholders})`).run(...newCharacterIds);
+      db.prepare(`DELETE FROM characters WHERE id IN (${idPlaceholders})`).run(...newCharacterIds);
+    })();
+  }
+
+  db.prepare(
+    `UPDATE banners SET is_active = 1 WHERE name = 'Banner Inaugural: Heróis Lendários'`
+  ).run();
+  db.prepare(
+    `DELETE FROM banners WHERE name LIKE 'Banner Temático:%'`
+  ).run();
+
   // Seed de bosses
   if (countBosses.count === 0) {
     const insertAll = db.transaction(() => {
@@ -875,6 +905,15 @@ function seed() {
   if (usersWithoutFood.length > 0) {
     console.log(`🎁 Itens iniciais dados a ${usersWithoutFood.length} usuário(s)`);
   }
+}
+
+
+module.exports = seed;
+
+// Executa o seed se chamado diretamente
+if (require.main === module) {
+  seed();
+  console.log('🌱 Seed concluído!');
 }
 
 

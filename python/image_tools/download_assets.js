@@ -25,6 +25,8 @@ const SOUNDS_DIR = path.join(BASE_DIR, 'assets', 'sounds');
 const TF_DB = path.join(BASE_DIR, 'data', 'gacha-game.db');
 
 const ANILIST_API = 'https://graphql.anilist.co';
+const WIKIPEDIA_API = 'https://en.wikipedia.org/w/api.php';
+const COMMONS_API = 'https://commons.wikimedia.org/w/api.php';
 
 // ====== Mapeamento de personajes → IDs del AniList ======
 // ID del banco local → { file, anilist_id }
@@ -135,6 +137,74 @@ async function anilistGetById(id) {
   return null;
 }
 
+async function anilistSearch(name) {
+  const query = `
+    query ($search: String) {
+      Character(search: $search) {
+        id
+        name { full }
+        image { large }
+      }
+    }
+  `;
+  try {
+    const r = await fetch(ANILIST_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, variables: { search: name } })
+    });
+    const d = await r.json();
+    if (d.data && d.data.Character) return d.data.Character;
+  } catch (e) {}
+  return null;
+}
+
+async function wikipediaImage(name) {
+  const params = new URLSearchParams({
+    action: 'query',
+    titles: name.replace(/ /g, '_'),
+    prop: 'pageimages',
+    format: 'json',
+    pithumbsize: '440',
+    redirects: '1',
+  });
+  try {
+    const response = await fetch(`${WIKIPEDIA_API}?${params}`, {
+      headers: { 'User-Agent': 'GachaGameAssetDownloader/1.0 (local development)' },
+    });
+    const data = await response.json();
+    const page = Object.values(data.query?.pages || {})[0];
+    return page?.thumbnail?.source || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function commonsImage(name) {
+  const params = new URLSearchParams({
+    action: 'query',
+    generator: 'search',
+    gsrsearch: `${name} character -cosplay -costume -fanart`,
+    gsrnamespace: '6',
+    gsrlimit: '10',
+    prop: 'imageinfo',
+    iiprop: 'url',
+    iiurlwidth: '440',
+    format: 'json',
+  });
+  try {
+    const response = await fetch(`${COMMONS_API}?${params}`, {
+      headers: { 'User-Agent': 'GachaGameAssetDownloader/1.0 (local development)' },
+    });
+    const data = await response.json();
+    const pages = Object.values(data.query?.pages || {});
+    const page = pages.find((candidate) => !/cosplay|costume|fanart/i.test(candidate.title));
+    return page?.imageinfo?.[0]?.thumburl || page?.imageinfo?.[0]?.url || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function generateGifForState(inputFile, outputFile, state) {
   return new Promise((resolve) => {
     try {
@@ -184,20 +254,25 @@ async function main() {
   console.log('─'.repeat(60));
 
   for (const c of CHARACTERS) {
-    console.log('\n🔧 ' + c.file + ' (db_id=' + c.db_id + ')');
+    console.log('\n🔧 ' + c.file + ' (db_id=' + (c.db_id || 'by name') + ')');
 
     if (!dry) {
       // Busca URL real do AniList
-      const char = await anilistGetById(c.anilist_id);
-      if (!char) {
-        console.log('  ❌ Personagem não encontrado no AniList: ' + c.file);
+      const anilistCharacter = c.anilist_id
+        ? await anilistGetById(c.anilist_id)
+        : await anilistSearch(c.search);
+      const imageUrl = anilistCharacter?.image?.large
+        || await wikipediaImage(c.search || c.file)
+        || await commonsImage(c.search || c.file);
+      if (!imageUrl) {
+        console.log('  ❌ Imagem não encontrada em AniList, Wikipédia ou Commons: ' + c.file);
         continue;
       }
-      console.log('  🎯 ' + char.name.full);
+      console.log('  🎯 Fonte da imagem: ' + (anilistCharacter ? 'AniList' : 'Wikipédia/Commons'));
       
       // Baixa imagem estática
       const imgPath = path.join(IMAGES_DIR, c.file + '.png');
-      await download(char.image.large, imgPath);
+      await download(imageUrl, imgPath);
       if (!fs.existsSync(imgPath) || fs.statSync(imgPath).size < 1000) {
         console.log('  ⚠️ Falha ao baixar imagem, usando placeholder');
         continue;
@@ -215,6 +290,13 @@ async function main() {
 
       // Atualiza banco
       if (db) {
+        const dbCharacter = c.db_id
+          ? { id: c.db_id }
+          : db.prepare('SELECT id FROM characters WHERE name = ?').get(c.name);
+        if (!dbCharacter) {
+          console.log('  ❌ Personagem não encontrado no banco: ' + c.name);
+          continue;
+        }
         const updates = {
           image_url: AP + 'images/' + c.file + '.png',
           image_idle_url: AP + 'images/' + c.file + '.png',
@@ -226,7 +308,7 @@ async function main() {
           gif_defeat_url: AP + 'gifs/' + c.file + '_defeat.gif',
         };
         const set = Object.keys(updates).map(k => k + ' = ?').join(', ');
-        db.prepare('UPDATE characters SET ' + set + ' WHERE id = ?').run(...Object.values(updates), c.db_id);
+        db.prepare('UPDATE characters SET ' + set + ' WHERE id = ?').run(...Object.values(updates), dbCharacter.id);
         console.log('  📝 Banco atualizado: ' + c.file);
       }
     } else {
