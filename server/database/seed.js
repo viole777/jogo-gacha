@@ -693,9 +693,6 @@ function seed() {
     console.log(`✅ ${characters.length} personagens inseridos no catálogo`);
   }
 
-  // Corrige as URLs de imagem/GIF usando somente os assets reais do projeto
-  syncAssetUrls(db);
-
   // Seed de banners (apenas se a tabela estiver vazia)
   if (countBanners.count === 0) {
     const insertAll = db.transaction(() => {
@@ -787,6 +784,9 @@ function seed() {
     insertAll();
     console.log(`✅ ${bosses.length} bosses criados`);
   }
+
+  // Corrige as URLs de imagem/GIF usando somente os assets reais do projeto
+  syncAssetUrls(db);
 
   // Associa drops aos bosses
   const dropCount = db.prepare('SELECT COUNT(*) as count FROM boss_drops').get();
