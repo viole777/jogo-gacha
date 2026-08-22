@@ -14,6 +14,7 @@
 
 const db = require('./index');
 const bcrypt = require('bcryptjs');
+const { syncAssetUrls } = require('./assetCatalog');
 
 // =============================================
 // PERSONAGENS DO CATÁLOGO
@@ -691,6 +692,9 @@ function seed() {
     insertAll();
     console.log(`✅ ${characters.length} personagens inseridos no catálogo`);
   }
+
+  // Corrige as URLs de imagem/GIF usando somente os assets reais do projeto
+  syncAssetUrls(db);
 
   // Seed de banners (apenas se a tabela estiver vazia)
   if (countBanners.count === 0) {

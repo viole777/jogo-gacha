@@ -1,6 +1,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 const SCHEMA = require('./schema');
+const { syncAssetUrls, auditAssetUrls } = require('./assetCatalog');
 
 // Caminho do banco de dados
 const dbPath = process.env.DB_PATH || path.join(__dirname, '..', '..', 'data', 'gacha-game.db');
@@ -40,5 +41,8 @@ for (const col of bossGifCols) {
     db.exec(`ALTER TABLE bosses ADD COLUMN ${col} TEXT`);
   }
 }
+
+syncAssetUrls(db);
+auditAssetUrls(db);
 
 module.exports = db;
