@@ -1395,8 +1395,7 @@ def get_opponents():
            FROM rankings r
            JOIN users u ON r.user_id = u.id
            WHERE u.id != ? AND (SELECT COUNT(*) FROM user_teams WHERE user_id = u.id) > 0
-           ORDER BY ABS(r.rating - ?) ASC
-           LIMIT 10""",
+               ORDER BY ABS(r.rating - ?) ASC""",
         (request.user['id'], base_rating)
     )
 
