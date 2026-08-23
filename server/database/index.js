@@ -4,16 +4,20 @@ const SCHEMA = require('./schema');
 const { syncAssetUrls, auditAssetUrls } = require('./assetCatalog');
 const { getBackupDir, restoreLatestBackup } = require('./backup');
 
-// Caminho do banco de dados
-if (process.env.NODE_ENV === 'production' && !process.env.DB_PATH) {
-  throw new Error('DB_PATH não configurado em produção. Configure-o no Render apontando para o disco persistente.');
-}
-const dbPath = process.env.DB_PATH || path.join(__dirname, '..', '..', 'data', 'gacha-game.db');
+// Em produção, usa o ponto de montagem persistente mesmo se o Render não
+// importar a variável DB_PATH do Blueprint.
+const defaultDbPath = process.env.NODE_ENV === 'production'
+  ? '/var/data/gacha-game.db'
+  : path.join(__dirname, '..', '..', 'data', 'gacha-game.db');
+const dbPath = process.env.DB_PATH || defaultDbPath;
 
 // Garante que o diretório data/ existe
 const fs = require('fs');
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(`Disco persistente não montado em ${dbDir}. Configure um Persistent Disk no Render.`);
+  }
   fs.mkdirSync(dbDir, { recursive: true });
 }
 restoreLatestBackup(dbPath);

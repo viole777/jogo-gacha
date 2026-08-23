@@ -89,8 +89,8 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     service: 'gacha-game-api',
     environment: nodeEnv,
-    database_persistence_configured: Boolean(process.env.DB_PATH),
-    backup_configured: Boolean(process.env.BACKUP_DIR || process.env.DB_PATH),
+    database_persistence_configured: db.dbPath.startsWith('/var/data') || Boolean(process.env.DB_PATH),
+    backup_configured: db.backupDir.startsWith('/var/data') || Boolean(process.env.BACKUP_DIR),
     backup: getBackupStatus(),
     timestamp: new Date().toISOString(),
   });
