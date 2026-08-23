@@ -34,9 +34,10 @@ function getRanking(req, res) {
   // Posição do jogador
   const myRow = db
     .prepare(
-      `SELECT COUNT(*) as position FROM rankings r
-       JOIN users u ON r.user_id = u.id
-       WHERE r.rating > (SELECT rating FROM rankings WHERE user_id = ?)`
+      `SELECT COUNT(*) as position
+       FROM users u
+       LEFT JOIN rankings r ON r.user_id = u.id
+       WHERE COALESCE(r.rating, 1000) > (SELECT COALESCE(rating, 1000) FROM rankings WHERE user_id = ?)`
     )
     .get(req.user.id);
 

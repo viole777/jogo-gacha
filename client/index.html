@@ -432,7 +432,7 @@
 
 <script>
 // ====== Estado ======
-let token = null;
+let token = localStorage.getItem('gacha_token');
 let currentBanner = null;
 let userData = null;
 let inventory = [];
@@ -494,7 +494,15 @@ async function api(url, method = 'GET', body = null) {
   const text = await r.text();
   let d = {};
   try { d = JSON.parse(text); } catch(e) {}
-  if (!r.ok) throw new Error(d.error || text || `Erro HTTP ${r.status}`);
+  if (!r.ok) {
+    if (r.status === 401) {
+      localStorage.removeItem('gacha_token');
+      token = null;
+    }
+    const error=new Error(d.error || text || `Erro HTTP ${r.status}`);
+    error.status=r.status;
+    throw error;
+  }
   return d;
 }
 function toast(msg, err=false){
@@ -520,6 +528,7 @@ async function login(){
   try{
     const d=await api('/api/auth/login','POST',{email:document.getElementById('loginEmail').value,password:document.getElementById('loginPassword').value});
     token=d.token;
+    localStorage.setItem('gacha_token',token);
     enterGame();
   }catch(e){ showLoginErr(e.message); }
 }
@@ -527,11 +536,12 @@ async function register(){
   try{
     const d=await api('/api/auth/register','POST',{username:document.getElementById('regUsername').value,email:document.getElementById('regEmail').value,password:document.getElementById('regPassword').value});
     token=d.token;
+    localStorage.setItem('gacha_token',token);
     enterGame();
     toast('✨ Conta criada!');
   }catch(e){ showLoginErr(e.message); }
 }
-function logout(){ token=null; document.getElementById('app').style.display='none'; document.getElementById('loginScreen').style.display='flex'; }
+function logout(){ token=null; localStorage.removeItem('gacha_token'); document.getElementById('app').style.display='none'; document.getElementById('loginScreen').style.display='flex'; }
 
 async function enterGame(){
   document.getElementById('loginScreen').style.display='none';
@@ -552,7 +562,10 @@ async function loadAccount(){
     document.getElementById('bagPill').textContent=`📦 ${d.user.bag_count}/${d.user.bag_limit}`;
     document.getElementById('gemsPill').textContent=`💎 ${fmt(d.user.gems)}`;
     document.getElementById('goldPill').textContent=`🪙 ${fmt(d.user.gold)}`;
-  }catch(e){ toast(e.message,true); }
+  }catch(e){
+    if(e.status===401) throw e;
+    toast(e.message,true);
+  }
 }
 function updateProfileButton(){
   if(!userData) return;
@@ -1562,6 +1575,9 @@ async function buyShopItem(id){
 // ====== Inicialização ======
 document.getElementById('loginScreen').style.display='flex';
 document.getElementById('app').style.display='none';
+if(token){
+  enterGame().catch(()=>logout());
+}
 </script>
 </body>
 </html>
