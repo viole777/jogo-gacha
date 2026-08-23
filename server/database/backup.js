@@ -10,7 +10,16 @@ let lastBackupAt = null;
 let lastBackupError = null;
 
 function getBackupDir(dbPath) {
-  return process.env.BACKUP_DIR || path.join(path.dirname(dbPath), 'backups');
+  const configuredDir = process.env.BACKUP_DIR;
+  if (!configuredDir) return path.join(path.dirname(dbPath), 'backups');
+
+  try {
+    fs.accessSync(path.dirname(configuredDir), fs.constants.W_OK);
+    return configuredDir;
+  } catch (error) {
+    console.warn(`⚠️ Diretório de backup indisponível (${configuredDir}); usando backup local.`);
+    return path.join(path.dirname(dbPath), 'backups');
+  }
 }
 
 function getBackupFiles(backupDir) {

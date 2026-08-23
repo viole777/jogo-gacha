@@ -10,7 +10,9 @@ const { getBackupDir, restoreLatestBackup } = require('./backup');
 const localDbPath = path.join(__dirname, '..', '..', 'data', 'gacha-game.db');
 const persistentDbPath = '/var/data/gacha-game.db';
 const configuredDbPath = process.env.DB_PATH || persistentDbPath;
-const dbPath = process.env.NODE_ENV === 'production' && !fs.existsSync(path.dirname(configuredDbPath))
+const canUseConfiguredDb = fs.existsSync(path.dirname(configuredDbPath))
+  && (() => { try { fs.accessSync(path.dirname(configuredDbPath), fs.constants.W_OK); return true; } catch (error) { return false; } })();
+const dbPath = process.env.NODE_ENV === 'production' && !canUseConfiguredDb
   ? localDbPath
   : configuredDbPath;
 
