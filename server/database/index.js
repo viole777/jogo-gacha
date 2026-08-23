@@ -22,6 +22,12 @@ db.pragma('foreign_keys = ON');
 // Executa o schema (cria tabelas se não existirem)
 db.exec(SCHEMA);
 
+// Garante que contas antigas também tenham rating e possam participar do PvP.
+db.prepare(
+  `INSERT OR IGNORE INTO rankings (user_id, rating)
+   SELECT id, 1000 FROM users`
+).run();
+
 // =============================================
 // MIGRAÇÕES LEVES
 // =============================================

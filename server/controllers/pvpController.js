@@ -12,12 +12,12 @@ const K = 32;
 function getRanking(req, res) {
   const ranking = db
     .prepare(
-            `SELECT COALESCE(r.rating, 1000) as rating,
-              COALESCE(r.wins, 0) as wins, COALESCE(r.losses, 0) as losses,
-              r.rank, u.id as user_id, u.username, u.level, u.avatar_url
-             FROM users u
-             LEFT JOIN rankings r ON r.user_id = u.id
-             ORDER BY COALESCE(r.rating, 1000) DESC, u.created_at ASC, u.id ASC
+                  `SELECT COALESCE(r.rating, 1000) as rating,
+                    COALESCE(r.wins, 0) as wins, COALESCE(r.losses, 0) as losses,
+                    r.rank, u.id as user_id, u.username, u.level, u.avatar_url
+                   FROM users u
+                   LEFT JOIN rankings r ON r.user_id = u.id
+                   ORDER BY COALESCE(r.rating, 1000) DESC, u.created_at ASC, u.id ASC
        LIMIT 50`
     )
     .all();
@@ -89,18 +89,19 @@ function getOpponents(req, res) {
 
   const opponents = db
     .prepare(
-      `SELECT u.id as user_id, u.username, u.level, u.avatar_url,
-              r.rating, r.wins, r.losses,
+            `SELECT u.id as user_id, u.username, u.level, u.avatar_url,
+              COALESCE(r.rating, 1000) as rating,
+              COALESCE(r.wins, 0) as wins, COALESCE(r.losses, 0) as losses,
               (SELECT COUNT(*) FROM user_characters WHERE user_id = u.id) as units_count,
               (SELECT COUNT(*) FROM user_teams WHERE user_id = u.id) as team_count,
               (SELECT c.image_url FROM user_teams ut
                JOIN user_characters uc ON ut.user_character_id = uc.id
                JOIN characters c ON uc.character_id = c.id
                WHERE ut.user_id = u.id ORDER BY ut.slot LIMIT 1) as team_avatar
-       FROM rankings r
-       JOIN users u ON r.user_id = u.id
-       WHERE u.id != ? AND (SELECT COUNT(*) FROM user_teams WHERE user_id = u.id) > 0
-       ORDER BY ABS(r.rating - ?) ASC`
+      FROM users u
+      LEFT JOIN rankings r ON r.user_id = u.id
+      WHERE u.id != ? AND (SELECT COUNT(*) FROM user_teams WHERE user_id = u.id) > 0
+      ORDER BY ABS(COALESCE(r.rating, 1000) - ?) ASC`
     )
     .all(req.user.id, baseRating);
 
@@ -113,13 +114,13 @@ function getOpponents(req, res) {
  * Body: { "defender_id": 5 }
  */
 function challengePvP(req, res) {
-  const { defender_id } = req.body;
+  const defenderId = Number(req.body.defender_id);
 
-  if (!defender_id) {
+  if (!Number.isInteger(defenderId) || defenderId <= 0) {
     return res.status(400).json({ error: 'defender_id é obrigatório' });
   }
 
-  if (defender_id === req.user.id) {
+  if (defenderId === req.user.id) {
     return res.status(400).json({ error: 'Você não pode desafiar a si mesmo' });
   }
 
@@ -130,7 +131,15 @@ function challengePvP(req, res) {
   }
 
   // Busca o time do defensor
-  const defenderTeam = getTeamPower(defender_id);
+  const defender = db
+    .prepare('SELECT id, username FROM users WHERE id = ?')
+    .get(defenderId);
+
+  if (!defender) {
+    return res.status(404).json({ error: 'Oponente não encontrado' });
+  }
+
+  const defenderTeam = getTeamPower(defenderId);
   if (!defenderTeam || defenderTeam.length === 0) {
     return res.status(404).json({ error: 'Oponente não possui time montado' });
   }
@@ -144,7 +153,7 @@ function challengePvP(req, res) {
     .get(req.user.id);
   const defenderRatingRow = db
     .prepare('SELECT rating FROM rankings WHERE user_id = ?')
-    .get(defender_id);
+    .get(defenderId);
 
   const attackerRating = attackerRatingRow ? attackerRatingRow.rating : 1000;
   const defenderRating = defenderRatingRow ? defenderRatingRow.rating : 1000;
@@ -161,6 +170,10 @@ function challengePvP(req, res) {
     defenderDelta = Math.round(K * (1 - expected));
   }
 
+  // Garante ranking para contas antigas criadas antes do sistema de ranking.
+  db.prepare('INSERT OR IGNORE INTO rankings (user_id, rating) VALUES (?, 1000)').run(req.user.id);
+  db.prepare('INSERT OR IGNORE INTO rankings (user_id, rating) VALUES (?, 1000)').run(defenderId);
+
   // Atualiza rankings
   const updateRanking = db.prepare(
     `UPDATE rankings
@@ -168,16 +181,16 @@ function challengePvP(req, res) {
      WHERE user_id = ?`
   );
   updateRanking.run(
-    battle.attackerWon ? attackerDelta : 0,
+    attackerDelta,
     battle.attackerWon ? 1 : 0,
     battle.attackerWon ? 0 : 1,
     req.user.id
   );
   updateRanking.run(
-    battle.attackerWon ? 0 : defenderDelta,
+    defenderDelta,
     battle.attackerWon ? 0 : 1,
     battle.attackerWon ? 1 : 0,
-    defender_id
+    defenderId
   );
 
   // Registra o resultado
@@ -186,8 +199,8 @@ function challengePvP(req, res) {
      VALUES (?, ?, ?, ?, ?, ?)`
   ).run(
     req.user.id,
-    defender_id,
-    battle.attackerWon ? req.user.id : defender_id,
+    defenderId,
+    battle.attackerWon ? req.user.id : defenderId,
     JSON.stringify(attackerTeam.map((c) => c.name)),
     JSON.stringify(defenderTeam.map((c) => c.name)),
     JSON.stringify(battle.log)
@@ -200,16 +213,12 @@ function challengePvP(req, res) {
   }
 
   // Busca o username do defensor para a resposta
-  const defender = db
-    .prepare('SELECT username FROM users WHERE id = ?')
-    .get(defender_id);
-
   return res.json({
     victory: battle.attackerWon,
     message: battle.attackerWon
       ? `Vitória contra ${defender.username}!`
       : `Derrota para ${defender.username}.`,
-    opponent: { id: defender_id, username: defender.username },
+    opponent: { id: defenderId, username: defender.username },
     rating_change: attackerDelta,
     new_rating: attackerRating + attackerDelta,
     log: battle.log,
