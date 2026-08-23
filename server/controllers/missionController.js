@@ -21,6 +21,16 @@ function yesterdayStr() {
   return d.toISOString().slice(0, 10);
 }
 
+function ensureUserMissions(userId) {
+  const missions = db.prepare('SELECT id FROM missions').all();
+  const insert = db.prepare(
+    'INSERT OR IGNORE INTO user_missions (user_id, mission_id) VALUES (?, ?)'
+  );
+  db.transaction(() => {
+    for (const mission of missions) insert.run(userId, mission.id);
+  })();
+}
+
 /**
  * Status do login diário (qual dia do streak, pode reivindicar?)
  * GET /api/missions/daily-login
@@ -120,17 +130,7 @@ function claimDailyLogin(req, res) {
  */
 function getMissions(req, res) {
   // Garante que o jogador tem registro para todas as missões ativas
-  const missions = db.prepare('SELECT * FROM missions').all();
-  const ensureUserMission = db.prepare(
-    'INSERT OR IGNORE INTO user_missions (user_id, mission_id) VALUES (?, ?)'
-  );
-
-  const insertAll = db.transaction(() => {
-    for (const m of missions) {
-      ensureUserMission.run(req.user.id, m.id);
-    }
-  });
-  insertAll();
+  ensureUserMissions(req.user.id);
 
   const userMissions = db
     .prepare(
@@ -163,6 +163,8 @@ function getMissions(req, res) {
 function claimMission(req, res) {
   const missionId = req.params.id;
 
+  ensureUserMissions(req.user.id);
+
   const row = db
     .prepare(
       `SELECT m.id, m.name, m.reward_gems, m.reward_gold,
@@ -185,15 +187,24 @@ function claimMission(req, res) {
     return res.status(400).json({ error: 'Recompensa já reivindicada' });
   }
 
-  db.prepare('UPDATE users SET gems = gems + ?, gold = gold + ? WHERE id = ?').run(
-    row.reward_gems,
-    row.reward_gold,
-    req.user.id
-  );
-
-  db.prepare(
-    'UPDATE user_missions SET claimed_at = CURRENT_TIMESTAMP WHERE user_id = ? AND mission_id = ?'
-  ).run(req.user.id, missionId);
+  const claim = db.transaction(() => {
+    const updated = db.prepare(
+      `UPDATE user_missions
+       SET claimed_at = CURRENT_TIMESTAMP
+       WHERE user_id = ? AND mission_id = ? AND is_completed = 1 AND claimed_at IS NULL`
+    ).run(req.user.id, missionId);
+    if (updated.changes !== 1) throw new Error('Recompensa já reivindicada');
+    db.prepare('UPDATE users SET gems = gems + ?, gold = gold + ? WHERE id = ?').run(
+      row.reward_gems,
+      row.reward_gold,
+      req.user.id
+    );
+  });
+  try {
+    claim();
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
+  }
 
   return res.json({
     message: `Missão "${row.name}" completada! +${row.reward_gems} gems, +${row.reward_gold} gold`,
@@ -209,6 +220,7 @@ function claimMission(req, res) {
  * @param {number} amount - Quanto progresso adicionar
  */
 function registerProgress(userId, objectiveType, amount = 1) {
+  ensureUserMissions(userId);
   const missions = db.prepare('SELECT id FROM missions WHERE objective_type = ?').all(objectiveType);
 
   const update = db.prepare(
@@ -217,19 +229,17 @@ function registerProgress(userId, objectiveType, amount = 1) {
      WHERE user_id = ? AND mission_id = ?`
   );
 
-  const updateAll = db.transaction(() => {
-    for (const m of missions) {
-      update.run(amount, userId, m.id);
+  const updateAndComplete = db.transaction(() => {
+    for (const mission of missions) {
+      update.run(amount, userId, mission.id);
     }
+    db.prepare(
+      `UPDATE user_missions
+       SET is_completed = 1
+       WHERE user_id = ? AND progress >= (SELECT objective_target FROM missions WHERE id = mission_id)`
+    ).run(userId);
   });
-  updateAll();
-
-  // Marca como completadas as que atingiram o alvo
-  db.prepare(
-    `UPDATE user_missions
-     SET is_completed = 1
-     WHERE user_id = ? AND progress >= (SELECT objective_target FROM missions WHERE id = mission_id)`
-  ).run(userId);
+  updateAndComplete();
 }
 
 /**
