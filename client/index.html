@@ -1077,7 +1077,7 @@ async function renderDetails(id){
   const xpPct=c.level?Math.min(100,Math.round((c.xp||0)/(c.level*100)*100)):0;
   const inTeam=teamIds.includes(c.id);
   const idleGif=c.image_idle_url||c.image_url;
-  panel.innerHTML=`
+  const detailsHTML=`
     <div class="avatar" style="border:4px solid ${color(c.rarity)}">${idleGif?`<img src="${esc(idleGif)}">`:'🎭'}</div>
     <h3>${esc(c.name)} <span class="rarity-badge ${c.rarity}" style="border-color:${color(c.rarity)};color:${color(c.rarity)}">${c.rarity}</span></h3>
     <div style="text-align:center;font-size:.75em;font-weight:700;color:#555">${esc(c.anime)} · ${esc(c.element||'')} · ${esc(c.role||'')}</div>
@@ -1097,6 +1097,10 @@ async function renderDetails(id){
       <button class="action-evolve" onclick="openEvolve(${c.id})">🔮 Evoluir</button>
       <button class="action-delete" onclick="confirmDelete(${c.id})">🗑️ Deletar/Vender</button>
     </div>`;
+  panel.innerHTML=detailsHTML;
+  if(window.matchMedia('(max-width: 900px)').matches){
+    openModal(`🗂️ ${c.name}`,detailsHTML);
+  }
 }
 async function toggleFav(id){ try{ await api(`/api/account/characters/${id}/favorite`,'PUT',{}); await loadCharacters(); toast('⭐ Atualizado'); }catch(e){ toast(e.message,true); } }
 async function toggleLockUnit(id){ try{ await api(`/api/account/characters/${id}/lock`,'PUT',{}); await loadCharacters(); toast('🔒 Atualizado'); }catch(e){ toast(e.message,true); } }

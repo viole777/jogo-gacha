@@ -36,30 +36,15 @@ services:
       name: gacha-data
       mountPath: /var/data
       sizeGB: 1
-    # Auto-deploy: novo deploy em cada push na branch default
-    autoDeploy: true
     envVars:
-      # =============================================
-      NODE_ENV: production
-      DB_PATH: /var/data/gacha-game.db
-      BACKUP_DIR: /var/data/backups
-      BACKUP_INTERVAL_MS: 900000
-
-      # Porta é fornecida automaticamente pelo Render
-      # PORT: 10000
-
-      # =============================================
-      # JWT Secret - GERE UM VALOR ÚNICO EM PRODUÇÃO!
-      # No painel do Render > Settings > Environment > Add Secret
-      # NÃO exponha a secret real no repo. Deixe em branco aqui
-      # e configure via dashboard: JWT_SECRET
-      # =============================================
-      # JWT_SECRET: <configure-no-dashboard-render>
-
-      # JWT expiration
-      JWT_EXPIRES_IN: 7d
-
-      # =============================================
-      # Admin - crie via dashboard secrets também
-      # ADMIN_PASSWORD: <configure-no-dashboard-render>
-      # =============================================
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /var/data/gacha-game.db
+      - key: BACKUP_DIR
+        value: /var/data/backups
+      - key: BACKUP_INTERVAL_MS
+        value: "900000"
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # Configure JWT_SECRET e ADMIN_PASSWORD como secrets no painel do Render.

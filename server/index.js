@@ -14,7 +14,7 @@ const adminRoutes = require('./routes/adminRoutes');
 const { seedMissions } = require('./controllers/missionController');
 const seed = require('./database/seed');
 const db = require('./database');
-const { startBackupScheduler, stopBackupScheduler } = require('./database/backup');
+const { getBackupStatus, startBackupScheduler, stopBackupScheduler } = require('./database/backup');
 
 const app = express();
 
@@ -91,6 +91,7 @@ app.get('/api/health', (req, res) => {
     environment: nodeEnv,
     database_persistence_configured: Boolean(process.env.DB_PATH),
     backup_configured: Boolean(process.env.BACKUP_DIR || process.env.DB_PATH),
+    backup: getBackupStatus(),
     timestamp: new Date().toISOString(),
   });
 });
