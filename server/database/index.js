@@ -2,8 +2,12 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const SCHEMA = require('./schema');
 const { syncAssetUrls, auditAssetUrls } = require('./assetCatalog');
+const { getBackupDir, restoreLatestBackup } = require('./backup');
 
 // Caminho do banco de dados
+if (process.env.NODE_ENV === 'production' && !process.env.DB_PATH) {
+  throw new Error('DB_PATH não configurado em produção. Configure-o no Render apontando para o disco persistente.');
+}
 const dbPath = process.env.DB_PATH || path.join(__dirname, '..', '..', 'data', 'gacha-game.db');
 
 // Garante que o diretório data/ existe
@@ -12,6 +16,7 @@ const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
 }
+restoreLatestBackup(dbPath);
 
 // Cria a conexão com o banco
 const db = new Database(dbPath);
@@ -61,3 +66,5 @@ syncAssetUrls(db);
 auditAssetUrls(db);
 
 module.exports = db;
+module.exports.dbPath = dbPath;
+module.exports.backupDir = getBackupDir(dbPath);

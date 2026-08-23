@@ -1,5 +1,5 @@
 # =============================================
-# Deploy no Render (Free Plan)
+# Deploy no Render com persistência de dados
 # =============================================
 # Este arquivo configura o deploy automático no Render.
 # Para usar:
@@ -42,6 +42,8 @@ services:
       # =============================================
       NODE_ENV: production
       DB_PATH: /var/data/gacha-game.db
+      BACKUP_DIR: /var/data/backups
+      BACKUP_INTERVAL_MS: 900000
 
       # Porta é fornecida automaticamente pelo Render
       # PORT: 10000

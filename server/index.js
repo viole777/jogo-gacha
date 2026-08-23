@@ -13,6 +13,8 @@ const pvpRoutes = require('./routes/pvpRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const { seedMissions } = require('./controllers/missionController');
 const seed = require('./database/seed');
+const db = require('./database');
+const { startBackupScheduler, stopBackupScheduler } = require('./database/backup');
 
 const app = express();
 
@@ -87,6 +89,8 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     service: 'gacha-game-api',
     environment: nodeEnv,
+    database_persistence_configured: Boolean(process.env.DB_PATH),
+    backup_configured: Boolean(process.env.BACKUP_DIR || process.env.DB_PATH),
     timestamp: new Date().toISOString(),
   });
 });
@@ -135,6 +139,20 @@ app.listen(port, () => {
   // Garante que o seed completo e as missões estejam presentes
   seed();
   seedMissions();
+  startBackupScheduler(db, db.dbPath);
   console.log(`🚀 Servidor gacha-game rodando em http://localhost:${port}`);
   console.log(`🌍 Ambiente: ${nodeEnv}`);
 });
+
+let shuttingDown = false;
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`🛑 ${signal}: salvando backup antes de encerrar...`);
+  await stopBackupScheduler(db, db.dbPath);
+  db.close();
+  process.exit(0);
+}
+
+process.once('SIGTERM', () => shutdown('SIGTERM'));
+process.once('SIGINT', () => shutdown('SIGINT'));
