@@ -69,6 +69,7 @@ function register(req, res) {
       gems: 1000,
       gold: 5000,
       level: 1,
+      avatar_url: null,
       is_admin: 0,
     },
   });
@@ -116,6 +117,7 @@ function login(req, res) {
       gold: user.gold,
       level: user.level,
       xp: user.xp,
+      avatar_url: user.avatar_url,
       is_admin: user.is_admin,
     },
   });

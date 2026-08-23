@@ -171,41 +171,31 @@ function challengePvP(req, res) {
     defenderDelta = Math.round(K * (1 - expected));
   }
 
-  // Garante ranking para contas antigas criadas antes do sistema de ranking.
-  db.prepare('INSERT OR IGNORE INTO rankings (user_id, rating) VALUES (?, 1000)').run(req.user.id);
-  db.prepare('INSERT OR IGNORE INTO rankings (user_id, rating) VALUES (?, 1000)').run(defenderId);
+  const saveBattle = db.transaction(() => {
+    db.prepare('INSERT OR IGNORE INTO rankings (user_id, rating) VALUES (?, 1000)').run(req.user.id);
+    db.prepare('INSERT OR IGNORE INTO rankings (user_id, rating) VALUES (?, 1000)').run(defenderId);
 
-  // Atualiza rankings
-  const updateRanking = db.prepare(
-    `UPDATE rankings
-     SET rating = rating + ?, wins = wins + ?, losses = losses + ?, updated_at = CURRENT_TIMESTAMP
-     WHERE user_id = ?`
-  );
-  updateRanking.run(
-    attackerDelta,
-    battle.attackerWon ? 1 : 0,
-    battle.attackerWon ? 0 : 1,
-    req.user.id
-  );
-  updateRanking.run(
-    defenderDelta,
-    battle.attackerWon ? 0 : 1,
-    battle.attackerWon ? 1 : 0,
-    defenderId
-  );
+    const updateRanking = db.prepare(
+      `UPDATE rankings
+       SET rating = rating + ?, wins = wins + ?, losses = losses + ?, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = ?`
+    );
+    updateRanking.run(attackerDelta, battle.attackerWon ? 1 : 0, battle.attackerWon ? 0 : 1, req.user.id);
+    updateRanking.run(defenderDelta, battle.attackerWon ? 0 : 1, battle.attackerWon ? 1 : 0, defenderId);
 
-  // Registra o resultado
-  db.prepare(
-    `INSERT INTO battle_results (attacker_id, defender_id, winner_id, attacker_team, defender_team, battle_log)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).run(
-    req.user.id,
-    defenderId,
-    battle.attackerWon ? req.user.id : defenderId,
-    JSON.stringify(attackerTeam.map((c) => c.name)),
-    JSON.stringify(defenderTeam.map((c) => c.name)),
-    JSON.stringify(battle.log)
-  );
+    db.prepare(
+      `INSERT INTO battle_results (attacker_id, defender_id, winner_id, attacker_team, defender_team, battle_log)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    ).run(
+      req.user.id,
+      defenderId,
+      battle.attackerWon ? req.user.id : defenderId,
+      JSON.stringify(attackerTeam.map((c) => c.name)),
+      JSON.stringify(defenderTeam.map((c) => c.name)),
+      JSON.stringify(battle.log)
+    );
+  });
+  saveBattle();
 
   // Progresso de missão
   registerProgress(req.user.id, 'pvp');

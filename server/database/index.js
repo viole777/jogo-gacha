@@ -18,6 +18,10 @@ const db = new Database(dbPath);
 
 // Habilita foreign keys (importante para integridade referencial)
 db.pragma('foreign_keys = ON');
+// Mantém as escritas seguras e permite leituras durante gravações curtas.
+db.pragma('journal_mode = WAL');
+db.pragma('synchronous = FULL');
+db.pragma('busy_timeout = 5000');
 
 // Executa o schema (cria tabelas se não existirem)
 db.exec(SCHEMA);

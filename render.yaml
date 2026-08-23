@@ -8,23 +8,21 @@
 #   3. Conecte seu repositório (GitHub/GitLab)
 #   4. O Render detecta render.yaml automaticamente
 #
-# Free Plan limits (plan: free):
+# Persistent storage requires the Starter plan:
 #   - 512 MB RAM / 0.5 vCPU
-#   - 1 GB disc (ephemeral - perdido em redeploy)
-#   - Service "sleep" após 15 min sem requests (gratuito)
+#   - Persistent disk mounted at /var/data
 #   - HTTP em https://seu-servico.onrender.com
-#   - Sem DB gerenciado (SQLite usado localmente)
+#   - SQLite usado localmente no disco persistente
 #
 # Observações importantes:
-#   - O SQLite usa o disco local; dados são recriados via seed() no startup
-#   - Em redeploy ou scale, o DB é recriado automaticamente
-#   - User data é perdido em redeploy, mas persiste entre sleep/wake
+#   - O seed() só complementa o catálogo; dados dos jogadores ficam no disco
+#   - O banco sobrevive a redeploy e reinício do serviço
 
 services:
   - type: web
     name: gacha-game-api
     region: oregon
-    plan: free
+    plan: starter
     env: node
     # Build: instala dependências Node.js (inclui better-sqlite3)
     buildCommand: npm install --production
@@ -34,11 +32,16 @@ services:
     healthCheckPath: /api/health
     # Timeout de startup (segundos) - seed pode levar alguns segundos
     startupTimeout: 120
+    disk:
+      name: gacha-data
+      mountPath: /var/data
+      sizeGB: 1
     # Auto-deploy: novo deploy em cada push na branch default
     autoDeploy: true
     envVars:
       # =============================================
       NODE_ENV: production
+      DB_PATH: /var/data/gacha-game.db
 
       # Porta é fornecida automaticamente pelo Render
       # PORT: 10000

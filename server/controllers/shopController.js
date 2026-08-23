@@ -154,13 +154,6 @@ function buyItem(req, res) {
     return res.status(400).json({ error: 'Item sem preço definido' });
   }
 
-  // Debita a moeda
-  if (currency === 'gems') {
-    db.prepare('UPDATE users SET gems = gems - ? WHERE id = ?').run(totalCost, req.user.id);
-  } else {
-    db.prepare('UPDATE users SET gold = gold - ? WHERE id = ?').run(totalCost, req.user.id);
-  }
-
   // Adiciona o item ao inventário
   const FOOD_STATS = {
     picanha_anja: { xp: 500, heal_percent: 40 },
@@ -182,7 +175,15 @@ function buyItem(req, res) {
   if (item_id === 'heal_potion') stats.heal = 100000;
   if (FOOD_STATS[item_id]) Object.assign(stats, FOOD_STATS[item_id]);
 
-  addItem(req.user.id, shopItem.name, itemType, quantity, shopItem.rarity, stats);
+  const purchase = db.transaction(() => {
+    if (currency === 'gems') {
+      db.prepare('UPDATE users SET gems = gems - ? WHERE id = ?').run(totalCost, req.user.id);
+    } else {
+      db.prepare('UPDATE users SET gold = gold - ? WHERE id = ?').run(totalCost, req.user.id);
+    }
+    addItem(req.user.id, shopItem.name, itemType, quantity, shopItem.rarity, stats);
+  });
+  purchase();
 
   // Busca saldo atualizado
   const updatedUser = db.prepare('SELECT gems, gold FROM users WHERE id = ?').get(req.user.id);
@@ -236,18 +237,16 @@ function sellCharacter(req, res) {
   // Legendários e secretos são vendidos por gems
   const isPremiumSell = char.rarity === 'legendary' || char.rarity === 'mythic' || char.rarity === 'secret';
 
-  // Remove o personagem da bag
-  db.prepare('DELETE FROM user_characters WHERE id = ?').run(user_character_id);
-
-  // Remove do time se estiver nele
-  db.prepare('DELETE FROM user_teams WHERE user_character_id = ?').run(user_character_id);
-
-  // Credita o pagamento
-  if (isPremiumSell && gemsReward > 0) {
-    db.prepare('UPDATE users SET gems = gems + ? WHERE id = ?').run(gemsReward, req.user.id);
-  } else {
-    db.prepare('UPDATE users SET gold = gold + ? WHERE id = ?').run(goldReward, req.user.id);
-  }
+  const sale = db.transaction(() => {
+    db.prepare('DELETE FROM user_characters WHERE id = ?').run(user_character_id);
+    db.prepare('DELETE FROM user_teams WHERE user_character_id = ?').run(user_character_id);
+    if (isPremiumSell && gemsReward > 0) {
+      db.prepare('UPDATE users SET gems = gems + ? WHERE id = ?').run(gemsReward, req.user.id);
+    } else {
+      db.prepare('UPDATE users SET gold = gold + ? WHERE id = ?').run(goldReward, req.user.id);
+    }
+  });
+  sale();
 
   const updatedUser = db.prepare('SELECT gems, gold FROM users WHERE id = ?').get(req.user.id);
 

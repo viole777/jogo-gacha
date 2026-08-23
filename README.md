@@ -15,3 +15,7 @@ Um jogo de **Gacha baseado em universos de anime**, onde você coleta personagen
 *  **Sistema de áudio:** efeitos de batalha, vitória e derrota.
 
 O projeto combina **coleção, estratégia, progressão e competição**, criando uma experiência inspirada nos tradicionais jogos de gacha e anime.
+
+### Persistência em produção
+
+O progresso dos jogadores é armazenado em SQLite. Em produção, o serviço precisa usar o disco persistente configurado em `render.yaml` e manter `DB_PATH=/var/data/gacha-game.db`. Um filesystem efêmero pode apagar contas, gemas, unidades e ranking durante um redeploy.
