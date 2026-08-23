@@ -16,7 +16,8 @@ const seed = require('./database/seed');
 const app = express();
 
 // Middleware global
-app.use(express.json());
+// Permite fotos escolhidas no celular como data URL, mantendo o payload limitado.
+app.use(express.json({ limit: '4mb' }));
 
 // Servir arquivos estáticos do client (sem cache para desenvolvimento)
 app.use(express.static(path.join(__dirname, '..', 'client'), {

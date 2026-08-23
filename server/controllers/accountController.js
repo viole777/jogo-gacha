@@ -317,6 +317,14 @@ function updateProfile(req, res) {
     return res.status(400).json({ error: 'A foto de perfil deve ser uma URL válida' });
   }
 
+  if (typeof avatar_url === 'string' && avatar_url.length > 3 * 1024 * 1024) {
+    return res.status(413).json({ error: 'A foto de perfil é muito grande' });
+  }
+
+  if (typeof avatar_url === 'string' && avatar_url.startsWith('data:') && !/^data:image\/(jpeg|png|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(avatar_url)) {
+    return res.status(400).json({ error: 'Formato de foto não suportado' });
+  }
+
   const normalizedUsername = username.trim();
   const existing = db
     .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
