@@ -1,24 +1,26 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 const SCHEMA = require('./schema');
 const { syncAssetUrls, auditAssetUrls } = require('./assetCatalog');
 const { getBackupDir, restoreLatestBackup } = require('./backup');
 
-// Em produção, usa o ponto de montagem persistente mesmo se o Render não
-// importar a variável DB_PATH do Blueprint.
-const defaultDbPath = process.env.NODE_ENV === 'production'
-  ? '/var/data/gacha-game.db'
-  : path.join(__dirname, '..', '..', 'data', 'gacha-game.db');
-const dbPath = process.env.DB_PATH || defaultDbPath;
+// Em produção, prefere o disco persistente e mantém um fallback explícito
+// quando o Render ainda não provisionou o ponto de montagem.
+const localDbPath = path.join(__dirname, '..', '..', 'data', 'gacha-game.db');
+const persistentDbPath = '/var/data/gacha-game.db';
+const configuredDbPath = process.env.DB_PATH || persistentDbPath;
+const dbPath = process.env.NODE_ENV === 'production' && !fs.existsSync(path.dirname(configuredDbPath))
+  ? localDbPath
+  : configuredDbPath;
 
 // Garante que o diretório data/ existe
-const fs = require('fs');
 const dbDir = path.dirname(dbPath);
 if (!fs.existsSync(dbDir)) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error(`Disco persistente não montado em ${dbDir}. Configure um Persistent Disk no Render.`);
-  }
   fs.mkdirSync(dbDir, { recursive: true });
+}
+if (process.env.NODE_ENV === 'production' && dbPath === localDbPath) {
+  console.warn('⚠️ Persistent Disk não montado; usando banco temporário. Configure /var/data no Render para preservar dados.');
 }
 restoreLatestBackup(dbPath);
 
@@ -71,4 +73,5 @@ auditAssetUrls(db);
 
 module.exports = db;
 module.exports.dbPath = dbPath;
+module.exports.backupDir = getBackupDir(dbPath);
 module.exports.backupDir = getBackupDir(dbPath);

@@ -19,6 +19,7 @@
  * 14. bosses              - Chefes por anime
  * 15. boss_drops          - Itens que cada boss dropa
  * 16. character_evolutions - Evoluções disponíveis por personagem
+ * 17. feedback_reports     - Bugs e reclamações dos jogadores
  */
 
 const SCHEMA = `
@@ -39,6 +40,22 @@ CREATE TABLE IF NOT EXISTS users (
   last_login    TEXT,
   last_seen     TEXT,
   created_at    TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =============================================
+-- 17. FEEDBACK_REPORTS - Bugs e reclamações
+-- =============================================
+CREATE TABLE IF NOT EXISTS feedback_reports (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type        TEXT NOT NULL CHECK (type IN ('bug', 'complaint', 'suggestion')),
+  priority    TEXT NOT NULL DEFAULT 'normal' CHECK (priority IN ('low', 'normal', 'high')),
+  title       TEXT NOT NULL,
+  description TEXT NOT NULL,
+  status      TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'reviewing', 'resolved')),
+  admin_note  TEXT,
+  created_at  TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at  TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- =============================================

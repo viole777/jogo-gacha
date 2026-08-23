@@ -368,6 +368,24 @@
   .tutorial-card ul { margin: 8px 0 0 18px; color: #444; font-size: .75em; line-height: 1.5; font-weight: 600; }
   .tutorial-card .tutorial-action { margin-top: 11px; padding: 8px 11px; font-size: .75em; background: var(--accent2); }
   .tutorial-tip { background: #e9f8ef; border: 3px solid var(--ink); border-radius: 10px; padding: 10px; margin-top: 14px; font-size: .78em; font-weight: 800; }
+  .feedback-form { display: grid; gap: 10px; }
+  .feedback-form label { display: grid; gap: 4px; text-align: left; font-size: .8em; font-weight: 800; }
+  .feedback-form input, .feedback-form select, .feedback-form textarea { width: 100%; padding: 9px 10px; border: 3px solid var(--ink); border-radius: 9px; background: #fff; box-shadow: var(--shadow-sm); font: inherit; }
+  .feedback-form textarea { min-height: 130px; resize: vertical; }
+  .feedback-submit { padding: 10px; background: var(--accent2); }
+  .feedback-report { background: #fff; border: 3px solid var(--ink); border-radius: 10px; padding: 10px; }
+  .feedback-report + .feedback-report { margin-top: 8px; }
+  .feedback-report-head { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .feedback-report-head strong { flex: 1; overflow-wrap: anywhere; }
+  .feedback-chip { padding: 2px 7px; border: 2px solid var(--ink); border-radius: 7px; font-size: .65em; font-weight: 900; white-space: nowrap; }
+  .feedback-chip.open { background: #ffd1d1; }
+  .feedback-chip.reviewing { background: var(--accent2); }
+  .feedback-chip.resolved { background: var(--green); }
+  .feedback-report p { margin-top: 7px; color: #444; font-size: .78em; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .feedback-report small { display: block; margin-top: 7px; color: #666; font-weight: 700; }
+  .feedback-admin-actions { display: grid; grid-template-columns: 1fr auto; gap: 6px; margin-top: 8px; }
+  .feedback-admin-actions select { min-width: 0; padding: 7px; border: 3px solid var(--ink); border-radius: 8px; background: #fff; font-weight: 700; }
+  .feedback-admin-actions button { padding: 7px 10px; background: var(--green); font-size: .75em; }
 
   /* Responsive */
   @media (max-width: 900px) {
@@ -437,6 +455,8 @@
     .modal h2 { padding-right: 42px; font-size: 1.2em; }
     .mq-item { align-items: flex-start; flex-wrap: wrap; }
     .mq-item > button, .mq-item > select { width: 100%; }
+    .mq-item > button:not(:disabled) { min-height: 44px; opacity: 1; }
+    .mq-item > button:disabled { opacity: .5; }
     .boss-card .boss-team { width: 100% !important; }
 
     .battle-scene { min-height: 0; padding: 12px 8px; }
@@ -531,7 +551,9 @@
       <button onclick="openRanking()">🏆 Ranking</button>
       <button onclick="openShop()">🏪 Loja</button>
       <button onclick="showView('tutorial')">📖 Tutorial</button>
+      <button onclick="openFeedback()">🐞 Relatar</button>
       <button id="adminNav" onclick="showView('admin')" style="display:none;background:var(--accent)">🛡️ Admin</button>
+      <button id="adminFeedbackNav" onclick="openAdminFeedback()" style="display:none;background:var(--accent2)">📬 Relatos</button>
     </div>
 
     <div class="main" id="mainView">
@@ -690,6 +712,7 @@ async function loadAccount(){
     userData=d.user;
     updateProfileButton();
     document.getElementById('adminNav').style.display=userData.is_admin===1?'block':'none';
+    document.getElementById('adminFeedbackNav').style.display=userData.is_admin===1?'block':'none';
     document.getElementById('bagPill').textContent=`📦 ${d.user.bag_count}/${d.user.bag_limit}`;
     document.getElementById('gemsPill').textContent=`💎 ${fmt(d.user.gems)}`;
     document.getElementById('goldPill').textContent=`🪙 ${fmt(d.user.gold)}`;
@@ -702,6 +725,61 @@ function updateProfileButton(){
   if(!userData) return;
   document.getElementById('profileLabel').textContent=userData.username;
   document.getElementById('profileMiniAvatar').innerHTML=userData.avatar_url?`<img src="${esc(userData.avatar_url)}" alt="">`:'🎭';
+}
+function openFeedback(){
+  openModal('🐞 Relatar um problema', `
+    <form class="feedback-form" onsubmit="submitFeedback(event)">
+      <label>Tipo
+        <select id="feedbackType"><option value="bug">Bug</option><option value="complaint">Reclamação</option><option value="suggestion">Sugestão</option></select>
+      </label>
+      <label>Prioridade
+        <select id="feedbackPriority"><option value="normal">Normal</option><option value="high">Alta</option><option value="low">Baixa</option></select>
+      </label>
+      <label>Título
+        <input id="feedbackTitle" maxlength="100" required placeholder="Ex.: missão não entregou a recompensa">
+      </label>
+      <label>Descrição
+        <textarea id="feedbackDescription" maxlength="2000" required placeholder="Explique o que aconteceu e como reproduzir o problema."></textarea>
+      </label>
+      <button class="feedback-submit" type="submit">📨 Enviar relato</button>
+    </form>`);
+}
+async function submitFeedback(event){
+  event.preventDefault();
+  try{
+    const d=await api('/api/feedback','POST',{type:document.getElementById('feedbackType').value,priority:document.getElementById('feedbackPriority').value,title:document.getElementById('feedbackTitle').value,description:document.getElementById('feedbackDescription').value});
+    closeModal();
+    toast('✅ '+d.message);
+  }catch(e){ toast(e.message,true); }
+}
+async function openAdminFeedback(){
+  openModal('📬 Relatos dos jogadores','<div class="empty">Carregando...</div>');
+  try{
+    const d=await api('/api/admin/feedback');
+    renderAdminFeedback(d);
+  }catch(e){ toast(e.message,true); closeModal(); }
+}
+function renderAdminFeedback(data){
+  const typeLabels={bug:'Bug',complaint:'Reclamação',suggestion:'Sugestão'};
+  const statusLabels={open:'Aberto',reviewing:'Em análise',resolved:'Resolvido'};
+  const priorityLabels={low:'Baixa',normal:'Normal',high:'Alta'};
+  const filter=`<select id="feedbackStatusFilter" onchange="reloadAdminFeedback()"><option value="all">Todos (${data.count})</option><option value="open">Abertos</option><option value="reviewing">Em análise</option><option value="resolved">Resolvidos</option></select>`;
+  const reports=data.reports.length?data.reports.map(report=>`<article class="feedback-report">
+    <div class="feedback-report-head"><strong>${esc(report.title)}</strong><span class="feedback-chip ${report.status}">${statusLabels[report.status]}</span><span class="feedback-chip">${typeLabels[report.type]} · ${priorityLabels[report.priority]}</span></div>
+    <div class="admin-meta">${esc(report.username)} · ${esc(report.email)} · ${esc(report.created_at)}</div>
+    <p>${esc(report.description)}</p>
+    ${report.admin_note?`<small>Observação: ${esc(report.admin_note)}</small>`:''}
+    <div class="feedback-admin-actions"><select id="feedback-status-${report.id}"><option value="open" ${report.status==='open'?'selected':''}>Aberto</option><option value="reviewing" ${report.status==='reviewing'?'selected':''}>Em análise</option><option value="resolved" ${report.status==='resolved'?'selected':''}>Resolvido</option></select><button onclick="updateFeedbackStatus(${report.id})">Salvar status</button></div>
+  </article>`).join(''):'<div class="empty">Nenhum relato encontrado.</div>';
+  openModal('📬 Relatos dos jogadores',`${filter}<div style="margin-top:10px">${reports}</div>`);
+}
+async function reloadAdminFeedback(){
+  const status=encodeURIComponent(document.getElementById('feedbackStatusFilter')?.value||'all');
+  try{ renderAdminFeedback(await api(`/api/admin/feedback?status=${status}`)); }catch(e){ toast(e.message,true); }
+}
+async function updateFeedbackStatus(reportId){
+  const status=document.getElementById(`feedback-status-${reportId}`).value;
+  try{ const d=await api(`/api/admin/feedback/${reportId}`,'PATCH',{status}); toast('✅ '+d.message); await reloadAdminFeedback(); }catch(e){ toast(e.message,true); }
 }
 function openProfile(){
   if(!userData) return;

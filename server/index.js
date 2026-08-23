@@ -11,6 +11,7 @@ const missionRoutes = require('./routes/missionRoutes');
 const bossRoutes = require('./routes/bossRoutes');
 const pvpRoutes = require('./routes/pvpRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
 const { seedMissions } = require('./controllers/missionController');
 const seed = require('./database/seed');
 const db = require('./database');
@@ -78,7 +79,10 @@ app.get('/', (req, res) => {
         players: 'GET /api/admin/players',
         grantCurrency: 'POST /api/admin/players/:id/currency',
         deletePlayer: 'DELETE /api/admin/players/:id',
+        feedback: 'GET /api/admin/feedback',
+        updateFeedback: 'PATCH /api/admin/feedback/:id',
       },
+      feedback: 'POST /api/feedback',
     },
   });
 });
@@ -89,8 +93,8 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     service: 'gacha-game-api',
     environment: nodeEnv,
-    database_persistence_configured: db.dbPath.startsWith('/var/data') || Boolean(process.env.DB_PATH),
-    backup_configured: db.backupDir.startsWith('/var/data') || Boolean(process.env.BACKUP_DIR),
+    database_persistence_configured: db.dbPath.startsWith('/var/data'),
+    backup_configured: db.backupDir.startsWith('/var/data'),
     backup: getBackupStatus(),
     timestamp: new Date().toISOString(),
   });
@@ -130,6 +134,7 @@ app.use('/api/pvp', pvpRoutes);
 
 // Rotas administrativas (cada rota também valida a permissão de admin)
 app.use('/api/admin', adminRoutes);
+app.use('/api/feedback', feedbackRoutes);
 
 // Tratamento de erro 404
 app.use((req, res) => {
