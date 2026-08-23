@@ -10,6 +10,7 @@ const evolutionRoutes = require('./routes/evolutionRoutes');
 const missionRoutes = require('./routes/missionRoutes');
 const bossRoutes = require('./routes/bossRoutes');
 const pvpRoutes = require('./routes/pvpRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const { seedMissions } = require('./controllers/missionController');
 const seed = require('./database/seed');
 
@@ -71,6 +72,11 @@ app.get('/', (req, res) => {
         ranking: 'GET /api/pvp/ranking',
         profile: 'GET /api/pvp/profile/:id',
       },
+      admin: {
+        players: 'GET /api/admin/players',
+        grantCurrency: 'POST /api/admin/players/:id/currency',
+        deletePlayer: 'DELETE /api/admin/players/:id',
+      },
     },
   });
 });
@@ -116,6 +122,9 @@ app.use('/api/bosses', bossRoutes);
 
 // Rotas de PvP e ranking
 app.use('/api/pvp', pvpRoutes);
+
+// Rotas administrativas (cada rota também valida a permissão de admin)
+app.use('/api/admin', adminRoutes);
 
 // Tratamento de erro 404
 app.use((req, res) => {

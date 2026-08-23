@@ -36,8 +36,8 @@ function getOwnedCharacter(charId, userId) {
 function getAccount(req, res) {
   const user = db
     .prepare(
-      `SELECT id, username, email, gems, gold, level, xp,
-              avatar_url, last_login, created_at
+            `SELECT id, username, email, gems, gold, level, xp,
+              avatar_url, is_admin, last_login, last_seen, created_at
        FROM users
        WHERE id = ?`
     )
@@ -66,7 +66,6 @@ function getAccount(req, res) {
       ...user,
 
       // Informação útil apenas internamente no backend.
-      // Não expomos is_admin para usuários comuns.
       gems_formatted: formatNumber(user.gems),
       gold_formatted: formatNumber(user.gold),
 

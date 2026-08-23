@@ -29,6 +29,7 @@ function authenticate(req, res, next) {
     }
 
     req.user = user;
+  db.prepare('UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
     next();
   } catch (error) {
     return res.status(401).json({ error: 'Token inválido ou expirado' });

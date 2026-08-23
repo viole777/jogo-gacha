@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url    TEXT,
   is_admin      INTEGER DEFAULT 0,
   last_login    TEXT,
+  last_seen     TEXT,
   created_at    TEXT DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -48,6 +48,11 @@ for (const col of bossGifCols) {
   }
 }
 
+const userCols = db.prepare('PRAGMA table_info(users)').all();
+if (!userCols.some((c) => c.name === 'last_seen')) {
+  db.exec('ALTER TABLE users ADD COLUMN last_seen TEXT');
+}
+
 syncAssetUrls(db);
 auditAssetUrls(db);
 

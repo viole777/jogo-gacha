@@ -100,7 +100,7 @@ function login(req, res) {
   }
 
   // Atualiza o último login
-  db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
+  db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP, last_seen = CURRENT_TIMESTAMP WHERE id = ?').run(user.id);
 
   // Gera o token JWT
   const token = jwt.sign({ userId: user.id }, jwtSecret, { expiresIn: jwtExpiresIn });

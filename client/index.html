@@ -329,6 +329,34 @@
   .pvp-opponent .opp-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .pvp-opponent .opp-info { flex: 1; }
 
+  /* Painel administrativo */
+  .admin-toolbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .admin-toolbar input, .admin-toolbar select { min-width: 0; padding: 9px 10px; border: 3px solid var(--ink); border-radius: 10px; background: #fff; box-shadow: var(--shadow-sm); font-weight: 700; }
+  .admin-toolbar input { flex: 1; }
+  .admin-toolbar select { width: 140px; }
+  .admin-summary { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .admin-summary .stat-row { margin-top: 0; flex: 1; min-width: 130px; }
+  .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 12px; }
+  .admin-player { background: var(--paper); border: 4px solid var(--ink); border-radius: 12px; box-shadow: var(--shadow-sm); padding: 12px; }
+  .admin-player-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .admin-player-header strong { flex: 1; font-size: 1.05em; overflow-wrap: anywhere; }
+  .admin-avatar { width: 42px; height: 42px; border: 3px solid var(--ink); border-radius: 50%; background: #fff; overflow: hidden; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .admin-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .online-status { padding: 3px 7px; border: 2px solid var(--ink); border-radius: 8px; background: var(--green); font-size: .65em; font-weight: 900; white-space: nowrap; }
+  .online-status.offline { background: #ddd; color: #555; }
+  .admin-meta { font-size: .75em; color: #555; font-weight: 700; overflow-wrap: anywhere; }
+  .admin-currency { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 10px 0; }
+  .admin-currency .stat-row { margin-top: 0; padding: 5px 7px; font-size: .78em; }
+  .admin-grant { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; margin-bottom: 10px; }
+  .admin-grant input { min-width: 0; width: 100%; padding: 7px; border: 3px solid var(--ink); border-radius: 8px; box-shadow: 2px 2px 0 var(--ink); }
+  .admin-grant button { padding: 7px 9px; background: var(--green); font-size: .75em; }
+  .admin-section { border-top: 3px solid var(--ink); padding-top: 8px; margin-top: 8px; }
+  .admin-section summary { cursor: pointer; font-weight: 900; font-size: .85em; }
+  .admin-list { margin-top: 6px; max-height: 180px; overflow-y: auto; }
+  .admin-list-item { display: flex; gap: 6px; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,.15); font-size: .73em; font-weight: 700; }
+  .admin-list-item span:first-child { overflow-wrap: anywhere; }
+  .admin-delete { width: 100%; margin-top: 12px; padding: 8px; background: #e74c3c; color: #fff; font-size: .78em; }
+
   /* Responsive */
   @media (max-width: 900px) {
     .sidebar { width: 60px; }
@@ -336,6 +364,87 @@
     .details-panel { display: none; }
     .battle-side.left, .battle-side.right { width: 48%; }
     .battle-avatar { width: 80px; height: 80px; }
+  }
+  @media (max-width: 640px) {
+    html, body { min-height: 100%; }
+    body { overflow: hidden; }
+    button, input, select { min-height: 44px; }
+    #loginScreen { padding: 16px; }
+    .login-box { width: 100%; padding: 22px 18px; border-radius: 16px; }
+    .login-box h1 { font-size: 1.8em; }
+
+    #app { height: 100dvh; }
+    .topbar {
+      flex-wrap: nowrap; gap: 6px; padding: 8px 10px;
+      overflow-x: auto; scrollbar-width: none; flex-shrink: 0;
+    }
+    .topbar::-webkit-scrollbar { display: none; }
+    .logo { min-width: max-content; font-size: 1em; }
+    .bag-pill, .coin { padding: 4px 8px; font-size: .75em; white-space: nowrap; }
+    .topbar button { flex: 0 0 auto; padding: 6px 9px; font-size: .78em; }
+    .profile-button { max-width: 120px; }
+
+    .layout { min-height: 0; position: relative; }
+    .main { width: 100%; min-width: 0; padding: 10px 10px 78px; }
+    .sidebar {
+      position: fixed; z-index: 20; bottom: 0; left: 0; right: 0;
+      width: 100%; height: 64px; padding: 6px 4px max(6px, env(safe-area-inset-bottom));
+      border: 0; border-top: 4px solid var(--ink); flex-direction: row; gap: 2px;
+      overflow-x: auto; overflow-y: hidden; background: var(--paper);
+      box-shadow: 0 -4px 0 rgba(0,0,0,.2);
+    }
+    .sidebar button {
+      flex: 1 0 70px; width: auto; min-height: 48px; padding: 4px 2px;
+      border-width: 2px; box-shadow: 2px 2px 0 var(--ink); font-size: .62em;
+      text-align: center; white-space: normal; line-height: 1.1;
+    }
+    .sidebar button:hover { transform: none; box-shadow: 2px 2px 0 var(--ink); }
+    .details-panel { display: none; }
+
+    .banner-card { padding: 12px; margin-bottom: 10px; }
+    .banner-display { gap: 8px; }
+    .banner-char { width: calc(33.333% - 6px); min-width: 88px; padding: 6px; }
+    .banner-char .avatar { width: 58px; height: 58px; font-size: 1.8em; }
+    .pull-row { gap: 8px; }
+    .pull-btn { flex: 1; padding: 11px 8px; font-size: .85em; }
+    .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .unit-card { padding: 8px 5px; }
+    .toolbar { gap: 6px; }
+    .toolbar input[type=text] { min-width: 0; width: 100%; flex-basis: 100%; }
+    .toolbar select { flex: 1; min-width: 0; }
+    .item-card { align-items: flex-start; flex-wrap: wrap; }
+    .item-card .info { min-width: 0; }
+    .item-card .qty, .item-card .use-btn { align-self: center; }
+
+    .modal-overlay { align-items: flex-end; }
+    .modal {
+      width: 100%; max-width: none; max-height: 92dvh; padding: 18px 14px;
+      border-width: 4px 4px 0; border-radius: 18px 18px 0 0;
+      box-shadow: 0 -5px 0 var(--ink);
+    }
+    .modal h2 { padding-right: 42px; font-size: 1.2em; }
+    .mq-item { align-items: flex-start; flex-wrap: wrap; }
+    .mq-item > button, .mq-item > select { width: 100%; }
+    .boss-card .boss-team { width: 100% !important; }
+
+    .battle-scene { min-height: 0; padding: 12px 8px; }
+    .battle-side.left, .battle-side.right {
+      float: none; width: 50%; display: inline-flex; vertical-align: top;
+    }
+    .battle-avatar { width: 72px; height: 72px; }
+    .battle-team { gap: 4px; }
+    .battle-avatar.small { width: 52px; height: 52px; }
+    .battle-actions button { flex: 1 1 42%; padding: 10px 8px; }
+    .battle-log { max-height: 100px; }
+    .admin-grid { grid-template-columns: 1fr; }
+    .admin-grant { grid-template-columns: 1fr 1fr; }
+    .admin-grant button { grid-column: 1 / -1; }
+  }
+  @media (max-width: 380px) {
+    .sidebar button { flex-basis: 62px; font-size: .58em; }
+    .banner-char { min-width: 0; }
+    .banner-char .avatar { width: 48px; height: 48px; }
+    .battle-avatar { width: 62px; height: 62px; }
   }
   .empty { color: #aaa; font-weight: 700; text-align: center; padding: 24px; background: rgba(255,255,255,.06); border: 3px dashed rgba(255,255,255,.2); border-radius: 12px; }
 </style>
@@ -407,6 +516,7 @@
       <button onclick="openPvP()">⚔️ PvP</button>
       <button onclick="openRanking()">🏆 Ranking</button>
       <button onclick="openShop()">🏪 Loja</button>
+      <button id="adminNav" onclick="showView('admin')" style="display:none;background:var(--accent)">🛡️ Admin</button>
     </div>
 
     <div class="main" id="mainView">
@@ -447,6 +557,7 @@ let soundOn = true;
 let battleTimer = null;
 let bannerRotationTimer = null;
 let battleData = null;
+let adminPlayers = [];
 
 const RARITY_COLORS = { secret:'#ff3b3b', mythic:'#ffc93c', legendary:'#b388ff', epic:'#4f9dde', rare:'#74b9ff', common:'#95a5a6' };
 const ELEMENT_COLORS = { fogo:'#ff8c00', agua:'#0096ff', natureza:'#3cc850', trevas:'#783cb4', luz:'#ffdc50', magia:'#b450ff', ouro:'#ffc800', vazio:'#646478', pedra:'#967850', 'espírito':'#50c8dc' };
@@ -559,6 +670,7 @@ async function loadAccount(){
     const d=await api('/api/account');
     userData=d.user;
     updateProfileButton();
+    document.getElementById('adminNav').style.display=userData.is_admin===1?'block':'none';
     document.getElementById('bagPill').textContent=`📦 ${d.user.bag_count}/${d.user.bag_limit}`;
     document.getElementById('gemsPill').textContent=`💎 ${fmt(d.user.gems)}`;
     document.getElementById('goldPill').textContent=`🪙 ${fmt(d.user.gold)}`;
@@ -664,8 +776,89 @@ function showView(view){
   if(view==='banners') renderBannersView();
   else if(view==='units') renderUnits();
   else if(view==='items') renderItems();
+  else if(view==='admin') renderAdmin();
 }
 function setViewHTML(html){ document.getElementById('mainView').innerHTML=html; }
+
+// ====== Painel administrativo ======
+async function renderAdmin(){
+  setViewHTML(`
+    <div class="admin-toolbar">
+      <input id="adminSearch" type="search" placeholder="🔍 Buscar jogador por nome ou email">
+      <select id="adminStatus" onchange="loadAdminPlayers()">
+        <option value="all">Todos</option>
+        <option value="online">Online</option>
+        <option value="offline">Offline</option>
+      </select>
+      <button onclick="loadAdminPlayers()">🔄 Atualizar</button>
+    </div>
+    <div id="adminSummary" class="admin-summary"></div>
+    <div id="adminPlayers" class="admin-grid"><div class="empty">Carregando jogadores...</div></div>`);
+  document.getElementById('adminSearch').addEventListener('keydown', (event) => {
+    if(event.key === 'Enter') loadAdminPlayers();
+  });
+  await loadAdminPlayers();
+}
+async function loadAdminPlayers(){
+  if(currentView!=='admin') return;
+  const search=encodeURIComponent(document.getElementById('adminSearch')?.value.trim()||'');
+  const status=encodeURIComponent(document.getElementById('adminStatus')?.value||'all');
+  const container=document.getElementById('adminPlayers');
+  if(container) container.innerHTML='<div class="empty">Carregando jogadores...</div>';
+  try{
+    const d=await api(`/api/admin/players?search=${search}&status=${status}`);
+    adminPlayers=d.players;
+    const summary=document.getElementById('adminSummary');
+    if(summary) summary.innerHTML=`<div class="stat-row"><span>Jogadores</span><strong>${d.count}</strong></div><div class="stat-row"><span>Online</span><strong style="color:var(--green)">${d.online_count}</strong></div>`;
+    if(!d.players.length){ if(container) container.innerHTML='<div class="empty">Nenhum jogador encontrado.</div>'; return; }
+    if(container) container.innerHTML=d.players.map(renderAdminPlayer).join('');
+  }catch(e){ if(container) container.innerHTML=`<div class="empty">${esc(e.message)}</div>`; }
+}
+function renderAdminPlayer(player){
+  const itemRows=player.items.length?player.items.map(item=>`<div class="admin-list-item"><span>${itemIcon(item)} ${esc(item.item_name)}</span><span>x${item.quantity}</span></div>`).join(''):'<div class="admin-meta">Nenhum item</div>';
+  const unitRows=player.units.length?player.units.map(unit=>`<div class="admin-list-item"><span>${esc(unit.name)} · ${unit.rarity}</span><span>Lv.${unit.level}</span></div>`).join(''):'<div class="admin-meta">Nenhuma unidade</div>';
+  const deleteButton=player.is_admin?'':`<button class="admin-delete" onclick="deleteAdminPlayer(${player.id})">🗑️ Apagar conta</button>`;
+  return `<article class="admin-player">
+    <div class="admin-player-header">
+      <div class="admin-avatar">${player.avatar_url?`<img src="${esc(player.avatar_url)}" alt="">`:'🎭'}</div>
+      <strong>${esc(player.username)}</strong>
+      <span class="online-status ${player.is_online?'':'offline'}">${player.is_online?'● Online':'○ Offline'}</span>
+    </div>
+    <div class="admin-meta">ID ${player.id} · ${esc(player.email)}</div>
+    <div class="admin-meta">Nível ${player.level} · Criada em ${esc(player.created_at||'—')} · Último acesso ${esc(player.last_login||'—')}</div>
+    <div class="admin-currency">
+      <div class="stat-row"><span>💎 Gemas</span><strong>${player.gems_formatted}</strong></div>
+      <div class="stat-row"><span>🪙 Moedas</span><strong>${player.gold_formatted}</strong></div>
+    </div>
+    <div class="admin-grant">
+      <input id="admin-gems-${player.id}" type="number" min="0" step="1" placeholder="+ Gemas">
+      <input id="admin-gold-${player.id}" type="number" min="0" step="1" placeholder="+ Moedas">
+      <button onclick="grantAdminCurrency(${player.id})">💰 Dar</button>
+    </div>
+    <details class="admin-section" open><summary>🎒 Itens (${player.items.length})</summary><div class="admin-list">${itemRows}</div></details>
+    <details class="admin-section" open><summary>⚔️ Unidades (${player.units.length})</summary><div class="admin-list">${unitRows}</div></details>
+    ${deleteButton}
+  </article>`;
+}
+async function grantAdminCurrency(userId){
+  const gems=Number(document.getElementById(`admin-gems-${userId}`)?.value||0);
+  const gold=Number(document.getElementById(`admin-gold-${userId}`)?.value||0);
+  try{
+    const d=await api(`/api/admin/players/${userId}/currency`,'POST',{gems,gold});
+    toast('💰 '+d.message);
+    await loadAdminPlayers();
+  }catch(e){ toast(e.message,true); }
+}
+async function deleteAdminPlayer(userId){
+  const player=adminPlayers.find(item=>item.id===userId);
+  const username=player?.username||'este jogador';
+  if(!window.confirm(`Apagar a conta de ${username}? Todos os itens e unidades serão removidos.`)) return;
+  try{
+    const d=await api(`/api/admin/players/${userId}`,'DELETE');
+    toast('🗑️ '+d.message);
+    await loadAdminPlayers();
+  }catch(e){ toast(e.message,true); }
+}
 
 function scheduleBannerRotation(nextRotationAt){
   if(bannerRotationTimer) clearTimeout(bannerRotationTimer);
