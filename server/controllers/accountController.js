@@ -303,6 +303,41 @@ function updateAvatar(req, res) {
 }
 
 /**
+ * Atualiza os dados públicos do perfil do jogador
+ * PUT /api/account/profile
+ */
+function updateProfile(req, res) {
+  const { username, avatar_url } = req.body;
+
+  if (typeof username !== 'string' || username.trim().length < 3 || username.trim().length > 20) {
+    return res.status(400).json({ error: 'Nome deve ter entre 3 e 20 caracteres' });
+  }
+
+  if (avatar_url !== null && avatar_url !== undefined && typeof avatar_url !== 'string') {
+    return res.status(400).json({ error: 'A foto de perfil deve ser uma URL válida' });
+  }
+
+  const normalizedUsername = username.trim();
+  const existing = db
+    .prepare('SELECT id FROM users WHERE username = ? AND id != ?')
+    .get(normalizedUsername, req.user.id);
+
+  if (existing) {
+    return res.status(409).json({ error: 'Esse nome já está em uso' });
+  }
+
+  const normalizedAvatar = avatar_url?.trim() || null;
+  db.prepare(
+    'UPDATE users SET username = ?, avatar_url = ? WHERE id = ?'
+  ).run(normalizedUsername, normalizedAvatar, req.user.id);
+
+  return res.json({
+    message: 'Perfil atualizado com sucesso!',
+    profile: { username: normalizedUsername, avatar_url: normalizedAvatar },
+  });
+}
+
+/**
  * Favoritar/desfavoritar personagem
  * PUT /api/account/characters/:id/favorite
  */
@@ -423,6 +458,7 @@ module.exports = {
   getTeam,
   setTeam,
   updateAvatar,
+  updateProfile,
   toggleFavorite,
   toggleLock,
   deleteCharacter,

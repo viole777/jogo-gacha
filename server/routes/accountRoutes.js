@@ -5,6 +5,7 @@ const {
   getTeam,
   setTeam,
   updateAvatar,
+  updateProfile,
   toggleFavorite,
   toggleLock,
   deleteCharacter,
@@ -39,5 +40,8 @@ router.put('/team', setTeam);
 
 // PUT /api/account/avatar - Atualizar avatar
 router.put('/avatar', updateAvatar);
+
+// PUT /api/account/profile - Atualizar nome e avatar públicos
+router.put('/profile', updateProfile);
 
 module.exports = router;

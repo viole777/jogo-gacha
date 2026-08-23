@@ -315,6 +315,13 @@
   .rank-row.top2 { background: linear-gradient(90deg, #c0c0c022, #fff); border-color: #c0c0c0; }
   .rank-row.top3 { background: linear-gradient(90deg, #cd7f3222, #fff); border-color: #cd7f32; }
   .rank-row.me { outline: 4px solid var(--accent2); }
+  .profile-button { display: flex; align-items: center; gap: 6px; max-width: 150px; overflow: hidden; }
+  .profile-button .profile-mini-avatar { width: 24px; height: 24px; border-radius: 50%; overflow: hidden; background: #eee; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .profile-mini-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-button .profile-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .public-profile { text-align: center; }
+  .public-profile .profile-avatar { width: 90px; height: 90px; margin: 0 auto 10px; border-radius: 50%; border: 4px solid var(--ink); overflow: hidden; background: #eee; display: flex; align-items: center; justify-content: center; font-size: 3em; }
+  .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
   /* PvP */
   .pvp-opponent { display: flex; align-items: center; gap: 10px; }
@@ -384,6 +391,7 @@
     <div class="bag-pill" id="bagPill">📦 0/20</div>
     <div class="coin gems" id="gemsPill">💎 0</div>
     <div class="coin gold" id="goldPill">🪙 0</div>
+    <button class="icon-btn profile-button" onclick="openProfile()" title="Editar perfil"><span class="profile-mini-avatar" id="profileMiniAvatar">🎭</span><span class="profile-label" id="profileLabel">Perfil</span></button>
     <button class="icon-btn" onclick="openDaily()">📅 Diário</button>
     <button class="sound-btn" id="soundBtn" onclick="toggleSound()">🔊 Som</button>
     <button class="icon-btn" onclick="logout()">🚪 Sair</button>
@@ -540,9 +548,36 @@ async function loadAccount(){
   try{
     const d=await api('/api/account');
     userData=d.user;
+    updateProfileButton();
     document.getElementById('bagPill').textContent=`📦 ${d.user.bag_count}/${d.user.bag_limit}`;
     document.getElementById('gemsPill').textContent=`💎 ${fmt(d.user.gems)}`;
     document.getElementById('goldPill').textContent=`🪙 ${fmt(d.user.gold)}`;
+  }catch(e){ toast(e.message,true); }
+}
+function updateProfileButton(){
+  if(!userData) return;
+  document.getElementById('profileLabel').textContent=userData.username;
+  document.getElementById('profileMiniAvatar').innerHTML=userData.avatar_url?`<img src="${esc(userData.avatar_url)}" alt="">`:'🎭';
+}
+function openProfile(){
+  if(!userData) return;
+  openModal('👤 Meu Perfil',`
+    <div class="public-profile">
+      <div class="profile-avatar">${userData.avatar_url?`<img src="${esc(userData.avatar_url)}" alt="Foto de perfil">`:'🎭'}</div>
+      <div class="form-group" style="text-align:left"><label>Nome público</label><input id="profileUsername" maxlength="20" value="${esc(userData.username)}"></div>
+      <div class="form-group" style="text-align:left"><label>URL da foto de perfil</label><input id="profileAvatarUrl" maxlength="500" value="${esc(userData.avatar_url || '')}" placeholder="https://... ou /assets/images/..."></div>
+      <button class="btn-primary" onclick="saveProfile()">💾 Salvar perfil</button>
+    </div>`);
+}
+async function saveProfile(){
+  try{
+    const username=document.getElementById('profileUsername').value;
+    const avatar_url=document.getElementById('profileAvatarUrl').value.trim() || null;
+    const d=await api('/api/account/profile','PUT',{username,avatar_url});
+    userData={...userData,...d.profile};
+    updateProfileButton();
+    closeModal();
+    toast('👤 Perfil atualizado!');
   }catch(e){ toast(e.message,true); }
 }
 async function loadInventory(){
@@ -1414,10 +1449,30 @@ async function openRanking(){
           <div class="mq-item rank-row ${topClass} ${isMe?'me':''}">
             <div class="rank-medal" style="${i<3?`color:${medalColors[i]};text-shadow:0 0 8px ${medalColors[i]}`:''}">${medal[i]||(i+1)+'º'}</div>
             <div class="rank-avatar">${r.avatar_url?`<img src="${esc(r.avatar_url)}">`:'🎭'}</div>
-            <div class="rank-name">${esc(r.username)} ${isMe?'<span class="tag" style="background:var(--accent2)">Você</span>':''}</div>
+            <button class="rank-name" style="border:0;background:none;text-align:left;padding:0;cursor:pointer" onclick="openPublicProfile(${r.user_id})">${esc(r.username)} ${isMe?'<span class="tag" style="background:var(--accent2)">Você</span>':''}</button>
             <div class="rank-rating">${r.rating} <span style="color:#555;font-size:.75em">${r.winrate}% Vit.</span></div>
           </div>`;
         }).join('')}
+      </div>`);
+  }catch(e){ toast(e.message,true); closeModal(); }
+}
+
+async function openPublicProfile(userId){
+  openModal('👤 Perfil','<div class="empty">Carregando...</div>');
+  try{
+    const d=await api('/api/pvp/profile/'+userId);
+    const p=d.profile;
+    const total=p.wins+p.losses;
+    const winrate=total?Math.round(p.wins/total*100):0;
+    openModal('👤 Perfil público',`
+      <div class="public-profile">
+        <div class="profile-avatar">${p.avatar_url?`<img src="${esc(p.avatar_url)}" alt="Foto de perfil">`:'🎭'}</div>
+        <h3>${esc(p.username)}</h3>
+        <div class="tag">Nível ${p.level}</div>
+        <div class="stat-row"><span>Rating</span><strong>${p.rating}</strong></div>
+        <div class="stat-row"><span>Vitórias</span><strong>${p.wins}</strong></div>
+        <div class="stat-row"><span>Derrotas</span><strong>${p.losses}</strong></div>
+        <div class="stat-row"><span>Winrate</span><strong>${winrate}%</strong></div>
       </div>`);
   }catch(e){ toast(e.message,true); closeModal(); }
 }

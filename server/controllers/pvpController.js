@@ -12,11 +12,12 @@ const K = 32;
 function getRanking(req, res) {
   const ranking = db
     .prepare(
-      `SELECT r.rating, r.wins, r.losses, r.rank,
-              u.id as user_id, u.username, u.level, u.avatar_url
-       FROM rankings r
-       JOIN users u ON r.user_id = u.id
-       ORDER BY r.rating DESC
+            `SELECT COALESCE(r.rating, 1000) as rating,
+              COALESCE(r.wins, 0) as wins, COALESCE(r.losses, 0) as losses,
+              r.rank, u.id as user_id, u.username, u.level, u.avatar_url
+             FROM users u
+             LEFT JOIN rankings r ON r.user_id = u.id
+             ORDER BY COALESCE(r.rating, 1000) DESC, u.created_at ASC, u.id ASC
        LIMIT 50`
     )
     .all();
@@ -50,6 +51,29 @@ function getRanking(req, res) {
     my_wins: myRanking ? myRanking.wins : 0,
     my_losses: myRanking ? myRanking.losses : 0,
   });
+}
+
+/**
+ * Busca o perfil público e o desempenho PvP de um jogador
+ * GET /api/pvp/profile/:id
+ */
+function getPublicProfile(req, res) {
+  const profile = db
+    .prepare(
+      `SELECT u.id as user_id, u.username, u.level, u.avatar_url, u.created_at,
+              COALESCE(r.rating, 1000) as rating,
+              COALESCE(r.wins, 0) as wins, COALESCE(r.losses, 0) as losses
+       FROM users u
+       LEFT JOIN rankings r ON r.user_id = u.id
+       WHERE u.id = ?`
+    )
+    .get(req.params.id);
+
+  if (!profile) {
+    return res.status(404).json({ error: 'Perfil não encontrado' });
+  }
+
+  return res.json({ profile });
 }
 
 /**
@@ -315,4 +339,4 @@ function simulateBattle(attackerTeam, defenderTeam) {
   };
 }
 
-module.exports = { getRanking, getOpponents, challengePvP };
+module.exports = { getRanking, getPublicProfile, getOpponents, challengePvP };

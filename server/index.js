@@ -55,6 +55,7 @@ app.get('/', (req, res) => {
         team: 'GET /api/account/team',
         setTeam: 'PUT /api/account/team',
         avatar: 'PUT /api/account/avatar',
+        profile: 'PUT /api/account/profile',
       },
       inventory: {
         list: 'GET /api/inventory',
@@ -64,6 +65,10 @@ app.get('/', (req, res) => {
         banners: 'GET /api/banners',
         bannerDetails: 'GET /api/banners/:id',
         pull: 'POST /api/banners/:id/pull',
+      },
+      pvp: {
+        ranking: 'GET /api/pvp/ranking',
+        profile: 'GET /api/pvp/profile/:id',
       },
     },
   });
