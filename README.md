@@ -23,3 +23,5 @@ O progresso dos jogadores é armazenado em SQLite. Em produção, o serviço pre
 No painel do Render, confirme no serviço ativo: **Plan = Starter**, um disco persistente montado em `/var/data` e a variável `DB_PATH=/var/data/gacha-game.db`. O endpoint `/api/health` informa `database_persistence_configured: true` quando a variável está presente. Sem essa configuração, o servidor agora falha ao iniciar em produção em vez de usar um banco efêmero silenciosamente.
 
 O servidor também cria até 10 backups completos em `BACKUP_DIR` (um imediatamente ao iniciar, depois a cada 15 minutos e outro no encerramento). Para proteger os backups contra a perda do próprio disco, configure `BACKUP_DIR` em um armazenamento externo ou faça cópia periódica para um serviço de objetos.
+
+https://jogo-gacha.onrender.com/
