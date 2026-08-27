@@ -128,6 +128,9 @@ curl https://jogo-gacha.onrender.com/api/health
 - [ ] Minigames
 - [ ] NPCs com diálogos
 - [ ] Sistema de escolhas
+- [ ] deixar a jogabilidade inicial mais facil
+- [ ] adicionar codigos com recompensas no jogo
+- [ ] corrigir sistema de missões quebrado
 
 ### 🌎 Longo Prazo
 - [ ] Novas áreas e mapas
