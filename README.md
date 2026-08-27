@@ -134,6 +134,7 @@ curl https://jogo-gacha.onrender.com/api/health
 - [ ] Sistema de temporadas
 - [ ] Guildas e raids
 - [ ] Mais conteúdo social
+- [ ] adicionar mais personagens com ataques baseados em gifs
 
 ---
 
